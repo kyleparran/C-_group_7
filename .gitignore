@@ -1,5 +1,13 @@
+
 # ide
 .vscode
+
+# build files
+build/
+bin/
+out/
+Debug/
+Release/
 
 # Prerequisites
 *.d
