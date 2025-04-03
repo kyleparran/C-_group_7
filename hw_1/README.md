@@ -11,10 +11,10 @@ One key reason is the overhead of repeated function calls (`add` and `getElement
   Using `std::vector<std::vector<int>>` can lead to non-contiguous memory layouts. When iterating through a matrix we would like all our values to be next to each other in memory. This increases the probability of a cache hit because the CPU loads in surrounding memory locations. Also the cpu can prefetch the data since iterating over a single vector is very predictable.
 
 - **Pointer Arithmetic**  
-  todo
+  Everytime we call `matrix[i]` the code calls the [] function of the vector with a value of 1. This function counts i steps from the starting address of the vector. By using moving a pointer along the matrix, we can traverse the array without having to recompute the desired location. We also eliminated the function call.
 
 - **Loop Unrolling**  
-  todo
+  Modern Processors can process multiple lines at the same time. By unrolling our loop we can process chunks of the matrix at the same time.
 
 - **Other Minor Improvements We Found**
     - defining `end_ptr` instead of calculating `matrix.data() + SIZE * SIZE` in the loop
