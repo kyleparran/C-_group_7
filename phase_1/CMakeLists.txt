@@ -1,21 +1,27 @@
-cmake_minimum_required(VERSION 4.0.0)
-project(MyProject)  # Sets env variable PROJECT_NAME
+cmake_minimum_required(VERSION 3.30.0)
+project(MyProject)
+
 add_executable(${PROJECT_NAME} main.cpp)
 
-# Creates library and link from file
-add_library(SourceCode src.cpp) 
+add_library(SourceCode src.cpp)
 target_include_directories(SourceCode PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(${PROJECT_NAME} SourceCode)
 
-
-
-# Add catch2 package for tests
-Include(FetchContent)
+include(FetchContent)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.4.0 # or a later release
+  GIT_TAG        v3.4.0
 )
 FetchContent_MakeAvailable(Catch2)
+
+include(CTest)
+enable_testing()
+
 add_executable(tests tests/test_src.cpp)
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain SourceCode)
+
+# No longer do add_test(NAME MyTests COMMAND tests), instead:
+include(Catch)
+catch_discover_tests(tests)
+
