@@ -4,7 +4,12 @@
 #include <cmath>
 
 void multiply_mv_row_major(const double* matrix, int rows, int cols, const double* vector, double* result){
-    std::fill(result, result + cols, 0.0);
+    // error handling
+    if (!matrix) throw std::invalid_argument("vatrix pointer is null.");
+    if (!vector) throw std::invalid_argument("vector pointer is null.");
+    if (!result) throw std::invalid_argument("result pointer is null.");
+    if (rows <= 0) throw std::invalid_argument("rows must be positive.");
+    if (cols <= 0) throw std::invalid_argument("cols must be positive.");
 
     for(int i = 0; i < rows; ++i){
         for(int j = 0; j < cols; ++j){
@@ -13,11 +18,27 @@ void multiply_mv_row_major(const double* matrix, int rows, int cols, const doubl
     }
 }
 
-void multiply_mv_col_major(const double* matrix, int rows, int cols, const double* vector, double* result)
-{
-    if (!matrix || !vector || !result) return;
-    if (rows <= 0 || cols <= 0) return;
-    for (int i = 0; i < rows; ++i) result[i] = 0.0;
+void multiply_mv_row_major_opt(const double* matrix, int rows, int cols, const double* vector, double* result){
+    // error handling
+    if (!matrix) throw std::invalid_argument("vatrix pointer is null.");
+    if (!vector) throw std::invalid_argument("vector pointer is null.");
+    if (!result) throw std::invalid_argument("result pointer is null.");
+    if (rows <= 0) throw std::invalid_argument("rows must be positive.");
+    if (cols <= 0) throw std::invalid_argument("cols must be positive.");
+
+    for(int i = 0; i < rows; ++i){
+        for(int j = 0; j < cols; ++j){
+            result[i] += matrix[i*cols + j] * vector[j];
+        }
+    }
+}
+
+void multiply_mv_col_major(const double* matrix, int rows, int cols, const double* vector, double* result){
+    // error handling
+    if(!matrix) throw std::invalid_argument("vatrix pointer is null.");
+    if(!vector) throw std::invalid_argument("vector pointer is null.");
+    if(!result) throw std::invalid_argument("result pointer is null.");
+    
     for (int j = 0; j < cols; ++j)
     {
         for (int i = 0; i < rows; ++i)
@@ -27,11 +48,14 @@ void multiply_mv_col_major(const double* matrix, int rows, int cols, const doubl
     }
 }
 
-void multiply_mv_col_major_optimized(const double* matrix, int rows, int cols, const double* vector, double* result)
-{
-    if (!matrix || !vector || !result) return;
-    if (rows <= 0 || cols <= 0) return;
-    for (int i = 0; i < rows; ++i) result[i] = 0.0;
+void multiply_mv_col_major_opt(const double* matrix, int rows, int cols, const double* vector, double* result){
+    // error handling
+    if (!matrix) throw std::invalid_argument("vatrix pointer is null.");
+    if (!vector) throw std::invalid_argument("vector pointer is null.");
+    if (!result) throw std::invalid_argument("result pointer is null.");
+    if (rows <= 0) throw std::invalid_argument("rows must be positive.");
+    if (cols <= 0) throw std::invalid_argument("cols must be positive.");
+
     for (int j = 0; j < cols; ++j)
     {
         double temp = vector[j];
@@ -49,12 +73,4 @@ void multiply_mv_col_major_optimized(const double* matrix, int rows, int cols, c
             result[i] += colStart[i] * temp;
         }
     }
-}
-
-
-
-
-unsigned int Factorial(unsigned int number)
-{
-    return number <= 1 ? number : Factorial(number - 1) * number;
 }

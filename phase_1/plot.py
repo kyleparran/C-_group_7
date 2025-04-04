@@ -1,25 +1,37 @@
-import csv
+import pandas as pd
 import matplotlib.pyplot as plt
 
-sizes = []
-unopt_means = []
-unopt_stds = []
-opt_means = []
-opt_stds = []
+df = pd.read_csv("benchmark_results.csv")
 
-with open("benchmark_results.csv", "r") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        sizes.append(int(row["Size"]))
-        unopt_means.append(float(row["UnoptimizedMean"]))
-        unopt_stds.append(float(row["UnoptimizedStddev"]))
-        opt_means.append(float(row["OptimizedMean"]))
-        opt_stds.append(float(row["OptimizedStddev"]))
+functions = ["multiply_mv_row_major",
+             "multiply_mv_col_major",
+             "multiply_mm_naive",
+             "multiply_mm_transposed_b"
+             ]
 
-plt.errorbar(sizes, unopt_means, yerr=unopt_stds, capsize=3, label="Unoptimized")
-plt.errorbar(sizes, opt_means, yerr=opt_stds, capsize=3, label="Optimized")
-plt.xlabel("Matrix Size (N x N)")
-plt.ylabel("Time (microseconds)")
-plt.legend()
-plt.title("Matrix-Vector Multiplication Benchmark")
+num_plots = len(functions)
+num_cols = 2
+for idx, func_name in enumerate(functions):
+    plt.subplot(num_plots // num_cols, num_cols, idx + 1)
+    
+    mask = df["function"] == func_name
+    plt.errorbar(df.loc[mask, "size"], 
+                 df.loc[mask, "mean"], 
+                 yerr=df.loc[mask, "std"], 
+                 capsize=3, 
+                 label="Unoptimized")
+    mask = df["function"] == func_name + "_opt"
+    plt.errorbar(df.loc[mask, "size"], 
+                df.loc[mask, "mean"], 
+                yerr=df.loc[mask, "std"], 
+                capsize=3, 
+                label="Optimized")
+    plt.title(func_name)
+    plt.xlabel("Matrix Size (N x N)")
+    plt.ylabel("Time (microseconds)")
+    plt.ylim((0, 45000))
+    plt.grid()
+    plt.legend()
+    
+plt.tight_layout()
 plt.show()

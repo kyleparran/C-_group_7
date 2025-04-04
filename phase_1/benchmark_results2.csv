@@ -1,0 +1,17 @@
+function,size,runs,mean,std
+multiply_mv_row_major,256,5,300.800000,300.804255
+multiply_mv_row_major_opt,256,5,334.800000,337.966271
+multiply_mv_col_major,256,5,346.400000,346.403233
+multiply_mv_col_major_opt,256,5,214.400000,214.538575
+multiply_mv_row_major,512,5,1449.600000,1487.601022
+multiply_mv_row_major_opt,512,5,1482.000000,1581.322485
+multiply_mv_col_major,512,5,1476.400000,1484.427028
+multiply_mv_col_major_opt,512,5,832.400000,832.400384
+multiply_mv_row_major,1024,5,5008.800000,5015.754819
+multiply_mv_row_major_opt,1024,5,5365.800000,5409.823195
+multiply_mv_col_major,1024,5,5679.200000,5703.497944
+multiply_mv_col_major_opt,1024,5,3465.800000,3466.906835
+multiply_mv_row_major,2048,5,14505.000000,14519.544890
+multiply_mv_row_major_opt,2048,5,13426.200000,13451.534686
+multiply_mv_col_major,2048,5,14694.200000,14708.146661
+multiply_mv_col_major_opt,2048,5,8909.600000,8935.408866

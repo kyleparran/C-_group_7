@@ -3,10 +3,17 @@ project(MyProject)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
+# Add src code
 add_library(SourceCode src.cpp)
 target_include_directories(SourceCode PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(${PROJECT_NAME} SourceCode)
 
+# Add benchmarking code
+add_library(Benchmarking benchmarking.cpp)
+target_include_directories(Benchmarking PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(${PROJECT_NAME} Benchmarking)
+
+# Add testing library Catch2
 include(FetchContent)
 FetchContent_Declare(
   Catch2
