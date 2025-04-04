@@ -9,6 +9,8 @@ functions = ["multiply_mv_row_major",
              "multiply_mm_transposed_b"
              ]
 
+
+
 num_plots = len(functions)
 num_cols = 2
 for idx, func_name in enumerate(functions):
@@ -29,7 +31,6 @@ for idx, func_name in enumerate(functions):
     plt.title(func_name)
     plt.xlabel("Matrix Size (N x N)")
     plt.ylabel("Time (microseconds)")
-    plt.ylim((0, 45000))
     plt.grid()
     plt.legend()
     

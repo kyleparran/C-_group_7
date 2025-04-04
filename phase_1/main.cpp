@@ -14,7 +14,7 @@ int main() {
     Benchmarker benchmarker;
 
     // Run specific function
-    const int size = 10;
+    const int size = 3000;
     double* matrix1 = benchmarker.random_vec(size*size);
     double* matrix2 = benchmarker.random_vec(size*size);
     double* vec = benchmarker.random_vec(size);
@@ -22,7 +22,7 @@ int main() {
     std::fill(res, res + size, 0.0);
 
     auto start = std::chrono::high_resolution_clock::now();
-    multiply_mv_row_major(matrix1, size, size, vec, res);
+    multiply_mv_row_major_opt(matrix1, size, size, vec, res);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Time: " << duration.count() << " milliseconds" << std::endl;
