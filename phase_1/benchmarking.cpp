@@ -4,6 +4,8 @@
 #include <chrono>
 #include <vector>
 #include <iostream>
+#include <string>
+#include <tuple>
 
 Benchmarker::Benchmarker()
     : gen(rd()), unif(-100, 100){

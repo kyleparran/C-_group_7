@@ -7,6 +7,8 @@
 #include "src.h"
 #include "benchmarking.h"
 #include <tuple>
+#include <string>
+#include <tuple>
 
 
 
@@ -30,8 +32,7 @@ int main() {
 
 
     // benchmark
-    // std::vector<int> sizes = {256, 512, 1024, 2048};
-    std::vector<int> sizes = {64, 128, 256, 512};
+    std::vector<int> sizes = {64, 128, 256, 512, 1024};
     int runs = 5;
     std::cout << "Benchmarks" << std::endl;
     std::cout << "----------" << std::endl;
@@ -62,7 +63,6 @@ int main() {
         
         std::tie(mean, std) = benchmarker.benchmark_mat_mat_transposed(multiply_mm_transposed_b_opt, s, s, s, runs);    
         std::cout << benchmarker.get_record_line("multiply_mm_transposed_b_opt", s, runs, mean, std) << std::endl;
-        
     }
 
     return 0;

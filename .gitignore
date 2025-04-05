@@ -1,6 +1,8 @@
 
 # ide
 .vscode
+.vs
+CMakeSettings.json
 
 # build files
 build/

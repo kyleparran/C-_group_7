@@ -8,7 +8,7 @@ inline double vector_dot(const double* vec1, const double* vec2, const double* v
     // Performs dot product of two vectors
     double s1 = 0.0, s2 = 0.0, s3 = 0.0, s4 = 0.0,
            s5 = 0.0, s6 = 0.0, s7 = 0.0, s8 = 0.0;
-    while (vec2 <= vec2_end - 8) {
+    while (vec2 < vec2_end - 8) {
         s1 += vec1[0] * vec2[0];
         s2 += vec1[1] * vec2[1];
         s3 += vec1[2] * vec2[2];
@@ -24,35 +24,13 @@ inline double vector_dot(const double* vec1, const double* vec2, const double* v
     }
     return s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8;
 }
-inline double vector_dot_inc(const double* vec1, const double* vec2, const double* vec2_end,
-                               int vec1_inc = 1, int vec2_inc = 1){
-     // Performs dot product of two vectors and allows for custom incrementing for both vectors
-    double s1 = 0.0, s2 = 0.0, s3 = 0.0, s4 = 0.0,
-           s5 = 0.0, s6 = 0.0, s7 = 0.0, s8 = 0.0;
-    while (vec2 <= vec2_end - 8) {
-        s1 += vec1[0] * vec2[0];
-        s2 += vec1[1*vec1_inc] * vec2[1*vec2_inc];
-        s3 += vec1[2*vec1_inc] * vec2[2*vec2_inc];
-        s4 += vec1[3*vec1_inc] * vec2[3*vec2_inc];
-        s5 += vec1[4*vec1_inc] * vec2[4*vec2_inc];
-        s6 += vec1[5*vec1_inc] * vec2[5*vec2_inc];
-        s7 += vec1[6*vec1_inc] * vec2[6*vec2_inc];
-        s8 += vec1[7*vec1_inc] * vec2[7*vec2_inc];
-        vec1 += 8*vec1_inc; vec2 += 8*vec2_inc;
-    }
-    while (vec2 < vec2_end) {
-        s1 += vec1[0] * vec2[0];
-        vec1 += vec1_inc; vec2 += vec2_inc;
-    }
-    return s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8;
-}
 
 inline double vector_dot_incv2(const double* vec1, const double* vec2, const double* vec2_end,
                                int vec2_inc = 1){
     // Performs dot product of two vectors and allows for custom incrementing
     double s1 = 0.0, s2 = 0.0, s3 = 0.0, s4 = 0.0,
            s5 = 0.0, s6 = 0.0, s7 = 0.0, s8 = 0.0;
-    while (vec2 <= vec2_end - 8) {
+    while (vec2 < vec2_end - 8*vec2_inc) {
         s1 += vec1[0] * vec2[0];
         s2 += vec1[1] * vec2[1*vec2_inc];
         s3 += vec1[2] * vec2[2*vec2_inc];
@@ -161,7 +139,6 @@ void multiply_mm_naive(const double* matrixA, int rowsA, int colsA, const double
     if (colsA != rowsB) throw std::invalid_argument("dimension mismatch.");
 
     std::fill(result, result + (rowsA * colsB), 0.0);
-
     for(int i = 0; i < rowsA; ++i){
         for(int j = 0; j < colsB; ++j){
             double sum = 0.0;
@@ -186,52 +163,76 @@ void multiply_mm_naive_opt(const double* matrixA, int rowsA, int colsA, const do
 
     std::fill(result, result + (rowsA * colsB), 0.0);
 
+    // 153
+    const double* mA_ptr_row = matrixA;
+    const double* mA_ptr_end = mA_ptr_row + colsA*rowsB;
+    double* r_ptr_row = result;
+    while (mA_ptr_row < mA_ptr_end){
+        const double* mB_ptr = matrixB;
+        const double* mA_ptr_cell = mA_ptr_row;
+        const double* mA_ptr_cell_end = mA_ptr_row + colsA;
+        while(mA_ptr_cell < mA_ptr_cell_end){
+            double* r_ptr_cell = r_ptr_row;
+            const double* mB_ptr_end = mB_ptr + colsB;
+
+            while (mB_ptr < mB_ptr_end - 4){
+                r_ptr_cell[0] += mA_ptr_cell[0] * mB_ptr[0];
+                r_ptr_cell[1] += mA_ptr_cell[0] * mB_ptr[1];
+                r_ptr_cell[2] += mA_ptr_cell[0] * mB_ptr[2];
+                r_ptr_cell[3] += mA_ptr_cell[0] * mB_ptr[3];
+                mB_ptr += 4; r_ptr_cell += 4;
+            }
+
+            while (mB_ptr < mB_ptr_end){
+                r_ptr_cell[0] += mA_ptr_cell[0] * mB_ptr[0];
+                ++mB_ptr; ++r_ptr_cell;
+            }
+            ++mA_ptr_cell;
+        }
+        r_ptr_row += colsB;
+        mA_ptr_row += colsA;
+    }
+
+    // // 170
+    // double* r_ptr_row = result;
     // const double* mA_ptr = matrixA;
     // for(int i = 0; i < rowsA; ++i){
-    //     for(int j = 0; j < colsB; ++j){
-    //         // const double (*)[colsB] mB_ptr = reinterpret_cast<const double (*)[colsB]>(matrixB + j);
-    //         // // const double* mB_ptr[rowsB] = (double*[rowsB]) (matrixB + j);
-    //         // const double* mB_ptr_end = mB_ptr + (rowsB-1);
+    //     const double* mB_ptr = matrixB;
+    //     for(int k = 0; k < colsA; ++k){
+    //         double* r_ptr_cell = r_ptr_row;
+    //         const double* mB_ptr_end = mB_ptr + colsB;
 
-    //         const double* mB_ptr = matrixB + j;
-    //         const double* mB_ptr_end = mB_ptr + (rowsB-1)*colsB;
-    //         result[i * colsB + j] = vector_dot_incv2(mA_ptr, mB_ptr, mB_ptr_end, colsB);
+    //         while (mB_ptr < mB_ptr_end - 4){
+    //             r_ptr_cell[0] += mA_ptr[k] * mB_ptr[0];
+    //             r_ptr_cell[1] += mA_ptr[k] * mB_ptr[1];
+    //             r_ptr_cell[2] += mA_ptr[k] * mB_ptr[2];
+    //             r_ptr_cell[3] += mA_ptr[k] * mB_ptr[3];
+    //             mB_ptr += 4; r_ptr_cell += 4;
+    //         }
+
+    //         while (mB_ptr < mB_ptr_end){
+    //             r_ptr_cell[0] += mA_ptr[k] * mB_ptr[0];
+    //             ++mB_ptr; ++r_ptr_cell;
+    //         }
     //     }
+    //     r_ptr_row += colsB;
     //     mA_ptr += colsA;
     // }
 
+    
+    // // 190
     // const double* mA_ptr = matrixA;
-    // const double* mB_ptr_end = matrixB + (rowsB * colsB);
+    // double* r_ptr = result;
     // for(int i = 0; i < rowsA; ++i){
-    //     for(int k = 0; k < colsA; ++k){
-    //         const double* mB_ptr = matrixB;
-    //         int j = 0;
-    //         while (mB_ptr <= mB_ptr_end) {
-    //             result[i * colsB + j] += mA_ptr[0] * mB_ptr[0];
-    //             mB_ptr += 1;
-    //             j += 1;
-    //         }
-    //         mA_ptr += 1;
+    //     const double* mB_ptr = matrixB;
+    //     const double* mB_ptr_end = mB_ptr + rowsB * colsB;
+    //     for(int j = 0; j < colsB; ++j){
+    //         r_ptr[j] = vector_dot_incv2(mA_ptr, mB_ptr, mB_ptr_end, colsB);
+    //         ++mB_ptr; ++mB_ptr_end;
     //     }
+    //     r_ptr += colsB;
+    //     mA_ptr += colsA;
     // }
-
-    // 451
-    for(int i = 0; i < rowsA; ++i){
-        for(int j = 0; j < colsB; ++j){
-            double s1 = 0.0, s2 = 0.0, s3 = 0.0, s4 = 0.0;
-            int k = 0;
-            for(; k <= colsA - 4; k += 4){
-                s1 += matrixA[i * colsA + (k + 0)] * matrixB[(k + 0) * colsB + j];
-                s2 += matrixA[i * colsA + (k + 1)] * matrixB[(k + 1) * colsB + j];
-                s3 += matrixA[i * colsA + (k + 2)] * matrixB[(k + 2) * colsB + j];
-                s4 += matrixA[i * colsA + (k + 3)] * matrixB[(k + 3) * colsB + j];
-            }
-            for(; k < colsA; ++k){
-                s1 += matrixA[i * colsA + k] * matrixB[k * colsB + j];
-            }
-            result[i * colsB + j] = s1 + s2 + s3 + s4;
-        }
-    }
 }
 void multiply_mm_transposed_b(const double* matrixA, int rowsA, int colsA, const double* matrixB_transposed, int rowsB, int colsB, double* result){
     if (!matrixA) throw std::invalid_argument("matrixA pointer is null.");
