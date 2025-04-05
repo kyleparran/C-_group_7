@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30.0)
-project(MyProject)
+project(MainProject)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
