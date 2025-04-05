@@ -111,48 +111,43 @@ TEST_CASE("2x3 x 3x2, naive_opt", "[multiply_mm_naive_opt]")
     delete[] res;
 }
 
-// TEST_CASE("2x3 x 3x2, transposed B", "[multiply_mm_transposed_b]")
-// {
-//     double matrixA[] = {
-//         1.0, 2.0, 3.0,
-//         4.0, 5.0, 6.0
-//     };
-//     // This is the transpose of the same B (7,8; 9,10; 11,12),
-//     // so B_transposed is 2 x 3
-//     double matrixB_t[] = {
-//         7.0,  9.0,  11.0,
-//         8.0, 10.0,  12.0
-//     };
-//     double* res = new double[2 * 2];
+TEST_CASE("2x3 x 3x2, transposed B", "[multiply_mm_transposed_b]")
+{
+    double matrixA[] = {
+        1.0, 2.0, 3.0,
+        4.0, 5.0, 6.0
+    };
+    double matrixB_t[] = {
+        7.0,  9.0,  11.0,
+        8.0, 10.0,  12.0
+    };
+    double* res = new double[2 * 2];
+    multiply_mm_transposed_b(matrixA, 2, 3, matrixB_t, 3, 2, res);
+    REQUIRE(approx_equal_dbl(res[0], 58.0));
+    REQUIRE(approx_equal_dbl(res[1], 64.0));
+    REQUIRE(approx_equal_dbl(res[2], 139.0));
+    REQUIRE(approx_equal_dbl(res[3], 154.0));
+    delete[] res;
+}
 
-//     multiply_mm_transposed_b(matrixA, 2, 3, matrixB_t, 3, 2, res);
+TEST_CASE("2x3 x 3x2, transposed B opt", "[multiply_mm_transposed_b_opt]")
+{
+    double matrixA[] = {
+        1.0, 2.0, 3.0,
+        4.0, 5.0, 6.0
+    };
+    double matrixB_t[] = {
+        7.0,  9.0,  11.0,
+        8.0, 10.0,  12.0
+    };
+    double* res = new double[2 * 2];
+    multiply_mm_transposed_b_opt(matrixA, 2, 3, matrixB_t, 3, 2, res);
+    REQUIRE(approx_equal_dbl(res[0], 58.0));
+    REQUIRE(approx_equal_dbl(res[1], 64.0));
+    REQUIRE(approx_equal_dbl(res[2], 139.0));
+    REQUIRE(approx_equal_dbl(res[3], 154.0));
+    delete[] res;
+}
 
-//     REQUIRE(approx_equal_dbl(res[0],  58.0));
-//     REQUIRE(approx_equal_dbl(res[1],  64.0));
-//     REQUIRE(approx_equal_dbl(res[2], 139.0));
-//     REQUIRE(approx_equal_dbl(res[3], 154.0));
+        
 
-//     delete[] res;
-// }
-
-// TEST_CASE("2x3 x 3x2, transposed B opt", "[multiply_mm_transposed_b_opt]")
-// {
-//     double matrixA[] = {
-//         1.0, 2.0, 3.0,
-//         4.0, 5.0, 6.0
-//     };
-//     double matrixB_t[] = {
-//         7.0,  9.0,  11.0,
-//         8.0, 10.0,  12.0
-//     };
-//     double* res = new double[2 * 2];
-
-//     multiply_mm_transposed_b_opt(matrixA, 2, 3, matrixB_t, 3, 2, res);
-
-//     REQUIRE(approx_equal_dbl(res[0],  58.0));
-//     REQUIRE(approx_equal_dbl(res[1],  64.0));
-//     REQUIRE(approx_equal_dbl(res[2], 139.0));
-//     REQUIRE(approx_equal_dbl(res[3], 154.0));
-
-//     delete[] res;
-// }

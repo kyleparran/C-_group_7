@@ -233,3 +233,51 @@ void multiply_mm_naive_opt(const double* matrixA, int rowsA, int colsA, const do
         }
     }
 }
+void multiply_mm_transposed_b(const double* matrixA, int rowsA, int colsA, const double* matrixB_transposed, int rowsB, int colsB, double* result){
+    if (!matrixA) throw std::invalid_argument("matrixA pointer is null.");
+    if (!matrixB_transposed) throw std::invalid_argument("matrixB_transposed pointer is null.");
+    if (!result) throw std::invalid_argument("result pointer is null.");
+    if (rowsA <= 0) throw std::invalid_argument("rowsA must be positive.");
+    if (colsA <= 0) throw std::invalid_argument("colsA must be positive.");
+    if (rowsB <= 0) throw std::invalid_argument("rowsB must be positive.");
+    if (colsB <= 0) throw std::invalid_argument("colsB must be positive.");
+    if (colsA != rowsB) throw std::invalid_argument("dimension mismatch.");
+    std::fill(result, result + (rowsA * colsB), 0.0);
+    for(int i = 0; i < rowsA; ++i){
+        for(int j = 0; j < colsB; ++j){
+            double sum = 0.0;
+            for(int k = 0; k < colsA; ++k){
+                sum += matrixA[i * colsA + k] * matrixB_transposed[j * rowsB + k];
+            }
+            result[i * colsB + j] = sum;
+        }
+    }
+}
+
+void multiply_mm_transposed_b_opt(const double* matrixA, int rowsA, int colsA, const double* matrixB_transposed, int rowsB, int colsB, double* result){
+    if (!matrixA) throw std::invalid_argument("matrixA pointer is null.");
+    if (!matrixB_transposed) throw std::invalid_argument("matrixB_transposed pointer is null.");
+    if (!result) throw std::invalid_argument("result pointer is null.");
+    if (rowsA <= 0) throw std::invalid_argument("rowsA must be positive.");
+    if (colsA <= 0) throw std::invalid_argument("colsA must be positive.");
+    if (rowsB <= 0) throw std::invalid_argument("rowsB must be positive.");
+    if (colsB <= 0) throw std::invalid_argument("colsB must be positive.");
+    if (colsA != rowsB) throw std::invalid_argument("dimension mismatch.");
+    std::fill(result, result + (rowsA * colsB), 0.0);
+    for(int i = 0; i < rowsA; ++i){
+        for(int j = 0; j < colsB; ++j){
+            double s1 = 0.0, s2 = 0.0, s3 = 0.0, s4 = 0.0;
+            int k = 0;
+            for(; k <= colsA - 4; k += 4){
+                s1 += matrixA[i * colsA + (k + 0)] * matrixB_transposed[j * rowsB + (k + 0)];
+                s2 += matrixA[i * colsA + (k + 1)] * matrixB_transposed[j * rowsB + (k + 1)];
+                s3 += matrixA[i * colsA + (k + 2)] * matrixB_transposed[j * rowsB + (k + 2)];
+                s4 += matrixA[i * colsA + (k + 3)] * matrixB_transposed[j * rowsB + (k + 3)];
+            }
+            for(; k < colsA; ++k){
+                s1 += matrixA[i * colsA + k] * matrixB_transposed[j * rowsB + k];
+            }
+            result[i * colsB + j] = s1 + s2 + s3 + s4;
+        }
+    }
+}

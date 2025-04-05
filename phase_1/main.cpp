@@ -57,11 +57,11 @@ int main() {
         std::tie(mean, std) = benchmarker.benchmark_mat_mat(multiply_mm_naive_opt, s, s, s, runs);    
         std::cout << benchmarker.get_record_line("multiply_mm_naive_opt", s, runs, mean, std) << std::endl;
         
-        // std::tie(mean, std) = benchmarker.benchmark_mat_mat(multiply_mm_transposed_b, s, s, s, runs);    
-        // std::cout << benchmarker.get_record_line("multiply_mm_transposed_b", s, runs, mean, std) << std::endl;
+        std::tie(mean, std) = benchmarker.benchmark_mat_mat_transposed(multiply_mm_transposed_b, s, s, s, runs);    
+        std::cout << benchmarker.get_record_line("multiply_mm_transposed_b", s, runs, mean, std) << std::endl;
         
-        // std::tie(mean, std) = benchmarker.benchmark_mat_mat(multiply_mm_transposed_b_opt, s, s, s, runs);    
-        // std::cout << benchmarker.get_record_line("multiply_mm_transposed_b_opt", s, runs, mean, std) << std::endl;
+        std::tie(mean, std) = benchmarker.benchmark_mat_mat_transposed(multiply_mm_transposed_b_opt, s, s, s, runs);    
+        std::cout << benchmarker.get_record_line("multiply_mm_transposed_b_opt", s, runs, mean, std) << std::endl;
         
     }
 

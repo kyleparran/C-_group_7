@@ -23,6 +23,13 @@ class Benchmarker {
             int dim3,
             int runs
         );
+        std::pair<double,double> benchmark_mat_mat_transposed(
+            void(*func)(const double*, int, int, const double*, int, int, double*),
+            int dim1,
+            int dim2,
+            int dim3,
+            int runs
+        );
         std::string get_record_line(std::string func_name, int size, int runs, double mean, double std);
 
     private:
