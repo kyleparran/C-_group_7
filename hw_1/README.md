@@ -1,6 +1,9 @@
 # Basic Implementation
 One key reason is the overhead of repeated function calls (`add` and `getElement`). For a $4096 \times 4096$ matrix, that’s $4096^2$ function calls for both retrieving elements and adding them, which quickly adds up. Additionally, using `std::vector<std::vector<int>>` can lead to non-contiguous memory layouts, resulting in less efficient cache utilization compared to a single contiguous block of memory.
 
+# Target/Execution
+We initially set a target execution time of under 50 milliseconds as the intial execution time was approximately 200 milliseconds on our hardware. We surpassed this target significantly, with runs averaging around 12 milliseconds post-optimization.
+
 # Optimizations
 
 - **Inlining**  
