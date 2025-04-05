@@ -46,11 +46,15 @@ cmake v3.30.0  or greater is required.
 
 - Discuss the role of compiler optimizations (like inlining) in achieving high performance. How did the optimization level affect the performance of your baseline and optimized implementations? What are the potential drawbacks of aggressive optimization?
 
-    todo
+   Compiler optimizations are a significant concern if the user wants to achieve high-performance computing. When optimizations like inlining are implemented the compiler inserts the "hopefully" frequently called functions into the caller's body. I say hopefully because, inlining would not be ideal for functions that aren't frequently called, like an obscure error function. 
+
+   In our project, increasing the compiler optimization greatly assisted our efforts in reducing the execution time. The unoptimized functions saw substantial speedups with things like better register usage and loop unrolling. The optimized functions didn't improve as significantly as the unoptimized functions due to already being mroe manually optimized, although performance overall still improved.
+
+   Some of the drawbacks of aggressive compiler optimizations are less readable code as the code likely becomes more complex and as a result also makes it harder to debug.  
 
 - Based on your profiling experience, what were the main performance bottlenecks in your initial implementations? How did your profiling results guide your optimization efforts?
 
-    todo
+    In the intial profiling, we were able to see which function consumes the most CPU time, as well as a better breakdown into the function itself. 
 
 - Reflect on the teamwork aspect of this assignment. How did dividing the initial implementation tasks and then collaborating on analysis and optimization work? What were the challenges and benefits of this approach?
 
