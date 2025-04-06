@@ -54,7 +54,7 @@ cmake v3.30.0  or greater is required.
 
 - Based on your profiling experience, what were the main performance bottlenecks in your initial implementations? How did your profiling results guide your optimization efforts?
 
-    In the intial profiling, we were able to see which function consumes the most CPU time, as well as a better breakdown into the function itself. 
+    We had difficulty setting up a detailed profiler. Intel's vtune did not support our processors and amd's uprof kept crashing. We performed profiling with vs code's Performance Profiler which allowed use to see functions that took the most time and which lines in the function consumed the most time. However it did not give incite to cache hits, which is a major part of this assignment. Instead of using the profiler to guide our optimization we instead made small adjustments to the code (like switching to pointers or switching the order of the loops) and reran the benchmarks.
 
 - Reflect on the teamwork aspect of this assignment. How did dividing the initial implementation tasks and then collaborating on analysis and optimization work? What were the challenges and benefits of this approach?
 
