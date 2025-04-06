@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 #include "src.h"
 #include "benchmarking.h"
 #include <tuple>
@@ -46,6 +47,9 @@ int main() {
         std::tie(mean, std) = benchmarker.benchmark_mat_vec(multiply_mv_row_major_opt, s, s, runs);    
         std::cout << benchmarker.get_record_line("multiply_mv_row_major_opt", s, runs, mean, std) << std::endl;
         
+        std::tie(mean, std) = benchmarker.benchmark_mat_vec_aligned(multiply_mv_row_major, s, s, runs, 64);
+        std::cout << benchmarker.get_record_line("aligned_multiply_mv_row_major", s, runs, mean, std) << std::endl;
+
         std::tie(mean, std) = benchmarker.benchmark_mat_vec(multiply_mv_col_major, s, s, runs);    
         std::cout << benchmarker.get_record_line("multiply_mv_col_major", s, runs, mean, std) << std::endl;
         
@@ -63,6 +67,30 @@ int main() {
         
         std::tie(mean, std) = benchmarker.benchmark_mat_mat_transposed(multiply_mm_transposed_b_opt, s, s, s, runs);    
         std::cout << benchmarker.get_record_line("multiply_mm_transposed_b_opt", s, runs, mean, std) << std::endl;
+    }
+    
+    {
+        std::string alignedFile = "aligned_unaligned_results.csv";
+        std::ofstream ofsAligned(alignedFile);
+        ofsAligned << "function,size,runs,mean,std" << std::endl;
+
+        std::vector<int> compareSizes = {64, 128, 256, 512, 1024};
+        int runs = 5;
+
+        for(int s : compareSizes) {
+            double mean, stdv;
+
+            // Unaligned
+            std::tie(mean, stdv) = benchmarker.benchmark_mat_vec(multiply_mv_row_major, s, s, runs);
+            ofsAligned << benchmarker.get_record_line("MV_RowMajor_Unaligned", s, runs, mean, stdv) << std::endl;
+
+            // Aligned
+            std::tie(mean, stdv) = benchmarker.benchmark_mat_vec_aligned(multiply_mv_row_major, s, s, runs, 64);
+            ofsAligned << benchmarker.get_record_line("MV_RowMajor_Aligned", s, runs, mean, stdv) << std::endl;
+        }
+        
+        ofsAligned.close();
+        std::cout << "Wrote aligned/unaligned comparison to " << alignedFile << std::endl;
     }
 
     return 0;

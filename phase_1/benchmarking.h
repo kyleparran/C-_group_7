@@ -3,7 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <random>
-
+#include <utility>
+#include <string>
 
 class Benchmarker {
     public:
@@ -15,6 +16,13 @@ class Benchmarker {
             int rows,
             int cols,
             int runs
+        );
+        std::pair<double,double> benchmark_mat_vec_aligned(
+            void(*func)(const double*, int, int, const double*, double*),
+            int rows,
+            int cols,
+            int runs,
+            size_t alignment = 64
         );
         std::pair<double,double> benchmark_mat_mat(
             void(*func)(const double*, int, int, const double*, int, int, double*),

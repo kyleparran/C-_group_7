@@ -1,0 +1,11 @@
+function,size,runs,mean,std
+MV_RowMajor_Unaligned,64,5,0.000000,0.000000
+MV_RowMajor_Aligned,64,5,0.000000,0.000000
+MV_RowMajor_Unaligned,128,5,0.000000,0.000000
+MV_RowMajor_Aligned,128,5,0.000000,0.000000
+MV_RowMajor_Unaligned,256,5,200.000000,400.000000
+MV_RowMajor_Aligned,256,5,199.600000,399.200000
+MV_RowMajor_Unaligned,512,5,599.600000,489.571486
+MV_RowMajor_Aligned,512,5,1486.000000,510.328522
+MV_RowMajor_Unaligned,1024,5,3799.800000,748.278397
+MV_RowMajor_Aligned,1024,5,3996.000000,634.081383

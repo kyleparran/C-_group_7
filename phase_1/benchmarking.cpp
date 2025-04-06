@@ -5,7 +5,20 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <cstdlib>
+#include <algorithm>
 #include <tuple>
+
+
+
+#include <malloc.h>
+static void* aligned_malloc_custom(size_t alignment, size_t size) {
+    return _aligned_malloc(size, alignment);
+}
+static void aligned_free_custom(void* ptr) {
+    _aligned_free(ptr);
+}
+
 
 Benchmarker::Benchmarker()
     : gen(rd()), unif(-100, 100){
@@ -55,6 +68,57 @@ std::pair<double,double> Benchmarker::benchmark_mat_vec(
     delete[] matrix; delete[] vec; delete[] res; delete[] times;
     return {mean, stddev};
 };
+
+std::pair<double,double> Benchmarker::benchmark_mat_vec_aligned(
+    void(*func)(const double*, int, int, const double*, double*),
+    int rows,
+    int cols,
+    int runs,
+    size_t alignment
+) {
+    // Allocate aligned memory
+    void* matPtr = aligned_malloc_custom(alignment, rows * cols * sizeof(double));
+    double* matrix = static_cast<double*>(matPtr);
+    for(int i = 0; i < rows * cols; i++){
+        matrix[i] = unif(gen);
+    }
+
+    void* vecPtr = aligned_malloc_custom(alignment, cols * sizeof(double));
+    double* vec = static_cast<double*>(vecPtr);
+    for(int i = 0; i < cols; i++){
+        vec[i] = unif(gen);
+    }
+
+    void* resPtr = aligned_malloc_custom(alignment, rows * sizeof(double));
+    double* res = static_cast<double*>(resPtr);
+
+    double* times = new double[runs];
+    std::fill(times, times + runs, 0.0);
+
+    for(int i = 0; i < runs; i++){
+        std::fill(res, res + rows, 0.0);
+        auto start = std::chrono::high_resolution_clock::now();
+        func(matrix, rows, cols, vec, res);
+        auto end = std::chrono::high_resolution_clock::now();
+        double elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        times[i] = elapsed;
+    }
+
+    double sum = 0.0;
+    for(int i = 0; i < runs; i++) sum += times[i];
+    double mean = sum / runs;
+    double var = 0.0;
+    for(int i = 0; i < runs; i++) var += (times[i] - mean)*(times[i] - mean);
+    var /= runs;
+    double stddev = std::sqrt(var);
+
+    aligned_free_custom(matrix);
+    aligned_free_custom(vec);
+    aligned_free_custom(res);
+    delete[] times;
+
+    return {mean, stddev};
+}
 
 
 std::pair<double,double> Benchmarker::benchmark_mat_mat(
