@@ -1,12 +1,8 @@
 
 
 # Phase 1
-- Team: 7
-- Team members: Scott Turro, Kyle Parran
-
-# todos
-- Couple more questions down below (marked with todo)
-- Finish and export report.xlsx into pdf
+- Group: 7
+- Group members: Scott Turro, Kyle Parran
 
 ## Build instructions
 cmake v3.30.0  or greater is required.
