@@ -1,35 +1,39 @@
-cmake_minimum_required(VERSION 3.30.0)
-project(MainProject)
+cmake_minimum_required(VERSION 3.22.0)
 
-add_executable(${PROJECT_NAME} main.cpp)
+# Client
+project(HFTClient)
+add_executable(HFTClient hft_client.cpp)
 
-# Add src code
-add_library(SourceCode src.cpp)
-target_include_directories(SourceCode PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(${PROJECT_NAME} SourceCode)
-
-# Add benchmarking code
-add_library(Benchmarking benchmarking.cpp)
-target_include_directories(Benchmarking PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(${PROJECT_NAME} Benchmarking)
+# Server
+add_executable(HFTServer hft_server.cpp)
 
 
-# Add testing library Catch2
-include(FetchContent)
-FetchContent_Declare(
-  Catch2
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.4.0
-)
-FetchContent_MakeAvailable(Catch2)
+# # Add src code
+# add_library(SourceCode src.cpp)
+# target_include_directories(SourceCode PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# target_link_libraries(${PROJECT_NAME} SourceCode)
 
-include(CTest)
-enable_testing()
+# # Add benchmarking code
+# add_library(Benchmarking benchmarking.cpp)
+# target_include_directories(Benchmarking PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# target_link_libraries(${PROJECT_NAME} Benchmarking)
 
-add_executable(tests tests/test_src.cpp)
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain SourceCode)
 
-# No longer do add_test(NAME MyTests COMMAND tests), instead:
-include(Catch)
-catch_discover_tests(tests)
+# # Add testing library Catch2
+# include(FetchContent)
+# FetchContent_Declare(
+#   Catch2
+#   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+#   GIT_TAG        v3.4.0
+# )
+# FetchContent_MakeAvailable(Catch2)
 
+# include(CTest)
+# enable_testing()
+
+# add_executable(tests tests/test_src.cpp)
+# target_link_libraries(tests PRIVATE Catch2::Catch2WithMain SourceCode)
+
+# # No longer do add_test(NAME MyTests COMMAND tests), instead:
+# include(Catch)
+# catch_discover_tests(tests)

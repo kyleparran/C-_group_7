@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstring>
 #include <cstdlib>
+#include <deque>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -11,48 +12,91 @@ using namespace std;
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 12345
-#define BUFFER_SIZE 1024
+const int BUFFER_SIZE = (getenv("BUFFER_SIZE") ? stoi(getenv("BUFFER_SIZE")) : 256);
+const int MIN_DELAY = (getenv("MIN_DELAY") ? stoi(getenv("MIN_DELAY")) : 100);
+const int RANDOM_DELAY = (getenv("RANDOM_DELAY") ? stoi(getenv("RANDOM_DELAY")) : 300);
 
-void receiveAndRespond(int socketFd, const string& name) {
-    char buffer[BUFFER_SIZE];
+
+inline void getNextPrice(char* priceBuffer, const int socketFd, int& currPriceIDLen, float& currPrice){
+        memset(priceBuffer, 0, BUFFER_SIZE);  // Clear buffer
+        int bytesReceived = recv(socketFd, priceBuffer, BUFFER_SIZE - 1, 0); // waits here for a new price
+        if (bytesReceived <= 0){
+            cerr << "🚨 Server closed connection or error occurred." << endl;
+            close(socketFd);
+            std::exit(EXIT_FAILURE);
+        }
+
+        // Parse price
+        char* commaPtr = strchr(priceBuffer, ',');
+        if (!commaPtr){
+            cerr << "❌ Invalid price format received: " << priceBuffer << endl;
+            getNextPrice(priceBuffer, socketFd, currPriceIDLen, currPrice); // retry
+            return;
+        }
+
+        currPriceIDLen = commaPtr - priceBuffer;
+        currPrice = strtof(commaPtr + 1, nullptr);
+}
+
+void receiveAndRespond(int socketFd, const string& name){
+    char priceBuffer[BUFFER_SIZE];
+    int currPriceIDLen = -1;
+    float currPrice = -1.0f;
+    float lastPrice = -1.0f;
+    float goingSign = 1.0f;
+    string_view currPriceID(priceBuffer, currPriceIDLen);
+    deque<float> priceHistory;
 
     // Send client name
     send(socketFd, name.c_str(), name.size(), 0);
 
-    while (true) {
-        memset(buffer, 0, BUFFER_SIZE);
-        int bytesReceived = recv(socketFd, buffer, BUFFER_SIZE - 1, 0);
-        if (bytesReceived <= 0) {
-            cerr << "Server closed connection or error occurred." << endl;
-            break;
+    // Get first price
+    getNextPrice(priceBuffer, socketFd, currPriceIDLen, currPrice);
+    currPriceID = string_view(priceBuffer, currPriceIDLen);
+    cout << "📲 Received price ID: " << currPriceID << ", Value: " << currPrice << endl;
+    priceHistory.push_back(currPrice);
+
+    // Get second price
+    getNextPrice(priceBuffer, socketFd, currPriceIDLen, currPrice);
+    currPriceID = string_view(priceBuffer, currPriceIDLen);
+    cout << "📲 Received price ID: " << currPriceID << ", Value: " << currPrice << endl;
+    priceHistory.push_back(currPrice);
+
+    goingSign = (currPrice > priceHistory[0]) ? 1.0f : -1.0f;
+    lastPrice = currPrice;
+    while (true){
+        getNextPrice(priceBuffer, socketFd, currPriceIDLen, currPrice);
+
+        // Trade Detection
+        if (goingSign * (currPrice - lastPrice) > 0){
+            send(socketFd, priceBuffer, currPriceIDLen, 0);
+            this_thread::sleep_for(chrono::milliseconds(MIN_DELAY + rand() % RANDOM_DELAY));
+
+            currPriceID = string_view(priceBuffer, currPriceIDLen);
+            cout << "📲 Received price ID: " << currPriceID << ", Value: " << currPrice << endl;
+            if(goingSign > 0){
+                cout << "📈 Momentum up! Sent order for price ID " << currPriceID << endl;
+            }else{
+                cout << "📉 Momentum down! Sent order for price ID " << currPriceID << endl;
+            }
+        }else{
+            cout << "📲 Received price ID: " << currPriceID << ", Value: " << currPrice << endl;
+            cout << "➖ No momentum. Ignoring price ID " << currPriceID << endl;
+            goingSign = goingSign * -1; // flip the momentum
         }
 
-        string data(buffer);
-        size_t commaPos = data.find(',');
-        if (commaPos == string::npos) {
-            cerr << "Invalid price format received: " << data << endl;
-            continue;
-        }
+        // Update price history
+        if (priceHistory.size() >= 3)
+            priceHistory.pop_front();
+        priceHistory.push_back(currPrice);
+        lastPrice = currPrice;
 
-        int priceId = stoi(data.substr(0, commaPos));
-        float price = stof(data.substr(commaPos + 1));
-
-        cout << "📥 Received price ID: " << priceId << ", Value: " << price << endl;
-
-        // Simulate reaction delay
-        this_thread::sleep_for(chrono::milliseconds(100 + rand() % 300));
-
-        // Send order (price ID)
-        string order = to_string(priceId);
-        send(socketFd, order.c_str(), order.length(), 0);
-
-        cout << "📤 Sent order for price ID: " << priceId << endl;
     }
 
     close(socketFd);
 }
 
-int main() {
+int main(){
     srand(time(nullptr));
 
     string name;
@@ -60,8 +104,8 @@ int main() {
     getline(cin, name);
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        cerr << "Socket creation failed!" << endl;
+    if (sock < 0){
+        cerr << "❌ Socket creation failed!" << endl;
         return 1;
     }
 
@@ -70,8 +114,8 @@ int main() {
     serverAddr.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_IP, &serverAddr.sin_addr);
 
-    if (connect(sock, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        cerr << "Connection to server failed!" << endl;
+    if (connect(sock, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
+        cerr << "❌ Connection to server failed!" << endl;
         return 1;
     }
 
