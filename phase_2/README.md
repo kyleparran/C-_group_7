@@ -1,37 +1,51 @@
-# Momementum
-We take trades if we detect 2 consecutive increases or decreases in prices. Therefore we can determine trades based on the last change and the current change in price. If we just saw a increase in prices, we want `(currPrice - lastPrice) > 0` Otherwise we want `(currPrice - lastPrice) < 0 -> -(currPrice - lastPrice) > 0`. 
+Group 7
+Scott Turro and Kyle Parran
 
-To do this we store the state of the last change as an int 
-- 1: if last change was positive
-- -1: if last change was negative
+## Momentum
 
-If we trade our price then we saw the same type of change and we do not have to change our state. Otherwise we flip the sign of our state.
+Our momentum strategy takes trades only after detecting two consecutive price movements in the same direction (either upward or downward). Specifically, we evaluate momentum by checking the current price change against the previous price change:
+
+- If the last price increased, we want to see if the current price also increased:
+  - `(currPrice - lastPrice) > 0`
+- If the last price decreased, we want to confirm another decrease:
+  - `(currPrice - lastPrice) < 0`, or equivalently, `-(currPrice - lastPrice) > 0`
+
+To manage this efficiently, we store the direction of the last price movement as an integer state:
+- `1`: if the previous change was positive (upward)
+- `-1`: if the previous change was negative (downward)
+
+If our trade is executed, this indicates the current price moved consistently with our stored state, so no state change is needed. Otherwise, we reverse the stored state to reflect the opposite momentum direction.
+
+## Code Optimization
+
+Initially, we started with a straightforward implementation and identified several optimization opportunities:
+
+- **Parsing Price Data:**
+  - Avoid unnecessary creation and manipulation of strings by directly operating on character buffers.
+
+- **Trade Detection Logic:**
+  - Efficient momentum detection by storing the sign of the previous change rather than recalculating direction repeatedly.
+
+- **Variable Management:**
+  - Use pointers or references for frequently accessed variables such as `currPrice` and `lastPrice` to minimize overhead.
+  - Leverage direct memory operations; for example, store `currPriceID` directly in the `priceBuffer` to eliminate extra copying.
+
+- **Initialization Phase:**
+  - Allow the first two prices to "burn-in" the system, setting initial momentum direction without prematurely triggering trades.
 
 
-# Code Optimization
-We started with a simple implementation and then looked for areas of improvement. The following came to mind
-- Parsing price
-    - Avoid creating and working with strings
-- Trade Detection
-    - See above
-- Variable access
-    - Use pointers for currPrice and lastPrice
-    - currPriceID is stored in priceBuffer -> no need to copy
-- Other
-    - Burn in 2 prices
 
+## Useful commands
 
+If you stop the server or client abruptly, the port may not be free. You can look up the processes using the ports using
 
-# Usefull commands
-
-If you stop the server or client ubrutly, the port may not be free. You can look up the processes using the ports using
-
-```
+```bash
 sudo lsof -i :12345
 ```
 Kill HFTServer or HFTClient using its associated pid
-```
+```bash
 sudo kill -9 202980
 ```
 
 **In the future** Use `ctrl+c` to stop a program instead of `ctrl+z` which stops the program and puts it in the background.
+

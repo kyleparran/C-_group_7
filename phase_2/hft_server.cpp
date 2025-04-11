@@ -31,6 +31,7 @@ mutex clientsMutex;
 unordered_map<int, steady_clock::time_point> priceTimestamps;
 unordered_set<int> priceAlreadyHit;
 mutex priceMutex;
+mutex coutMutex;
 
 atomic<int> priceId{0};
 
@@ -54,7 +55,11 @@ void broadcastPrices() {
             }
         }
 
-        cout << "📢 Sent price ID " << id << " with value " << price << endl;
+        {
+            lock_guard<mutex> lock(coutMutex);
+            cout << "📢 Sent price ID " << id << " with value " << price << endl;
+        }
+        
         this_thread::sleep_for(chrono::seconds(5));
     }
 }
@@ -67,20 +72,28 @@ void handleClient(ClientInfo* client) {
     memset(buffer, 0, BUFFER_SIZE);
     int bytesReceived = recv(client->socket, buffer, BUFFER_SIZE - 1, 0);
     if (bytesReceived <= 0) {
-        cerr << "❌ Failed to receive client name." << endl;
+        {
+            lock_guard<mutex> lock(coutMutex);
+            cerr << "❌ Failed to receive client name." << endl;
+        }
         close(client->socket);
         return;
     }
 
     client->name = string(buffer);
+    {
+    lock_guard<mutex> lock(coutMutex);
     cout << "👤 Registered client: " << client->name << endl;
-
+    }
     // Receive orders
     while (true) {
         memset(buffer, 0, BUFFER_SIZE);
         bytesReceived = recv(client->socket, buffer, BUFFER_SIZE - 1, 0);
         if (bytesReceived <= 0) {
+            {
+            lock_guard<mutex> lock(coutMutex);
             cerr << "❌ Client " << client->name << " disconnected." << endl;
+            }
             break;
         }
 
@@ -95,14 +108,19 @@ void handleClient(ClientInfo* client) {
             }
 
             if (priceTimestamps.find(receivedPriceId) == priceTimestamps.end()) {
+                {lock_guard<mutex> lock(coutMutex);
                 cerr << "⚠️ Unknown price ID: " << receivedPriceId << endl;
+                }
                 continue;
             }
 
             priceAlreadyHit.insert(receivedPriceId);
             auto latency = duration_cast<milliseconds>(now - priceTimestamps[receivedPriceId]).count();
+            {
+            lock_guard<mutex> lock(coutMutex);
             cout << "🎯 " << client->name << " hit price ID " << receivedPriceId
                  << " after " << latency << " ms" << endl;
+            }
         }
     }
 
@@ -136,9 +154,10 @@ void startServer() {
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
-
+    {
+    lock_guard<mutex> lock(coutMutex);
     cout << "🚀 Server is listening on 127.0.0.1:" << PORT << endl;
-
+    }
     thread priceThread(broadcastPrices);
     priceThread.detach();
 
@@ -150,9 +169,10 @@ void startServer() {
             perror("Accept failed");
             continue;
         }
-
+        {
+        lock_guard<mutex> lock(coutMutex);
         cout << "📡 Client connected: " << inet_ntoa(clientAddr.sin_addr) << endl;
-
+        }
         // Create a new client object on the heap
         auto client = make_unique<ClientInfo>();
         client->socket = clientSocket;
