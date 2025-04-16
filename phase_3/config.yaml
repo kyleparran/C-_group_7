@@ -1,0 +1,6 @@
+logger:
+  name: "file_logger"
+  level: "info"
+  pattern: "[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] [%!] %v"   # See spdlog docs for options
+  file: "logs/main.log"
+  async: false
