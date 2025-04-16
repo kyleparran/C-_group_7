@@ -17,8 +17,11 @@ struct Order {
     int place_order(Side side, double price, int qty);
     void cancel(int id);
     void handle_fill(int id, int filled_qty);
-    void print() const;
+    inline std::string to_string() const;
 };
+inline std::string Order::to_string() const {
+    return "";  // todo
+}
 
 class OrderManager {
     private:
@@ -26,5 +29,8 @@ class OrderManager {
 
     public:
         void update(const FeedEvent& event);
-        void print() const;
+        inline std::string to_string() const;
 };
+inline std::string OrderManager::to_string() const {
+    return ""; // todo
+}

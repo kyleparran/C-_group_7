@@ -1,6 +1,9 @@
 logger:
-  name: "file_logger"
+  name: "main"
   level: "info"
-  pattern: "[%Y-%m-%d %H:%M:%S.%e] [%l] [%n] [%!] %v"   # See spdlog docs for options
-  file: "logs/main.log"
-  async: false
+  pattern: "%^[%T] [%L] %n: %$ %v"   # See spdlog docs for options
+  use_file: true
+  file_name: "logs/main_%Y%m%d_%H%M%S.log"
+  file_level: "info"
+  use_console: true
+  console_level: "info"

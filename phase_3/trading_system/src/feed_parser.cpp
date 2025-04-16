@@ -4,29 +4,15 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
-void FeedEvent::print() const {
-    switch (type) {
-        case FeedType::BID:
-            std::cout << "[BID] " << price << " x " << quantity << "\n";
-            break;
-        case FeedType::ASK:
-            std::cout << "[ASK] " << price << " x " << quantity << "\n";
-            break;
-        case FeedType::EXECUTION:
-            std::cout << "[EXECUTION] Order " << order_id << " filled: " << quantity << "\n";
-            break;
-        default:
-            std::cout << "[UNKNOWN]\n";
-    }
-}
 
 std::vector<FeedEvent> load_feed(const std::string& filename) {
     std::ifstream file(filename);
     std::vector<FeedEvent> events;
 
     if (!file.is_open()) {
-        std::cerr << "Error: could not open file " << filename << "\n";
+        spdlog::error("Error: could not open file {}", filename);
         return events;
     }
 
@@ -58,7 +44,7 @@ std::vector<FeedEvent> load_feed(const std::string& filename) {
                 events.push_back({FeedType::EXECUTION, 0.0, filled, order_id});
             }
         } else {
-            std::cerr << "Unknown event type: " << line << "\n";
+            spdlog::error("Unknown event type: {}", type);
         }
     }
 

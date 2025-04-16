@@ -5,9 +5,14 @@ add_executable(main main.cpp)
 # Add trading system code
 add_subdirectory(trading_system)
 
-# sample_feed.txt to build
+# sample_feed.txt to build folder
 configure_file(${CMAKE_SOURCE_DIR}/sample_feed.txt
                ${CMAKE_BINARY_DIR}/sample_feed.txt
+               COPYONLY)
+               
+# config.yaml to build folder
+configure_file(${CMAKE_SOURCE_DIR}/config.yaml
+               ${CMAKE_BINARY_DIR}/config.yaml
                COPYONLY)
 
 # Add spdlog library for loggings
@@ -27,5 +32,5 @@ FetchContent_Declare(
   GIT_TAG        0.8.0  # You can specify any released tag here
 )
 FetchContent_MakeAvailable(yaml-cpp)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE TradingSystem spdlog::spdlog yaml-cpp::yaml-cpp) 
+target_link_libraries(TradingSystem PUBLIC spdlog::spdlog yaml-cpp::yaml-cpp) 
+target_link_libraries(${PROJECT_NAME} PRIVATE TradingSystem) 

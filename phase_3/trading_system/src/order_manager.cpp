@@ -14,13 +14,7 @@ void Order::cancel(int id){
 void Order::handle_fill(int id, int filled_qty){
     
 }
-void Order::print() const {
-    
-}
 
 void OrderManager::update(const FeedEvent& event){
     
-}
-
-void OrderManager::print() const {
 }
