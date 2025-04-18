@@ -1,4 +1,4 @@
-##Group 7 : Phase 3
+## Group 7 : Phase 3
 Kyle Parran & Scott Turro
 
 
