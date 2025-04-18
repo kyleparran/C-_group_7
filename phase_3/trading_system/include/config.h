@@ -12,10 +12,10 @@ struct LoggerConfig {
     std::string console_level;
 };
 
-// High level config
 struct AppConfig {
     LoggerConfig logger;
 };
 
 AppConfig loadAppConfig(const std::string& yaml_path);
+
 

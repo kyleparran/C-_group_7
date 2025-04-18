@@ -1,36 +1,33 @@
 #pragma once
 #include <map>
 #include <memory>
+#include <string>
 #include "feed_parser.h"
 
-enum class Side { BID, ASK };
+enum class Side { Buy, Sell };
 enum class OrderStatus { New, Filled, PartiallyFilled, Cancelled };
 
 struct Order {
-    int id;
-    Side side;
-    double price;
-    int quantity;
+    int id = 0;
+    Side side = Side::Buy;
+    double price = 0.0;
+    int quantity = 0;
     int filled = 0;
     OrderStatus status = OrderStatus::New;
-
-    int place_order(Side side, double price, int qty);
-    void cancel(int id);
-    void handle_fill(int id, int filled_qty);
-    inline std::string to_string() const;
 };
-inline std::string Order::to_string() const {
-    return "";  // todo
-}
+
+struct OMEvent {
+    std::string msg;
+    bool completed = false;
+    int order_id = 0;
+};
 
 class OrderManager {
-    private:
-        std::map<int, std::unique_ptr<Order>> orders;
-
-    public:
-        void update(const FeedEvent& event);
-        inline std::string to_string() const;
+    std::map<int, std::unique_ptr<Order>> orders;
+    int next_id = 1;
+public:
+    OMEvent place_order(Side side, double price, int qty);
+    void cancel(int id);
+    OMEvent handle_fill(int id, int qty);
+    OMEvent update(const FeedEvent& ev);
 };
-inline std::string OrderManager::to_string() const {
-    return ""; // todo
-}

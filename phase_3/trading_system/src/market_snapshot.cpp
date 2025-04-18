@@ -1,28 +1,34 @@
 #include "market_snapshot.h"
-#include <map>
-#include <memory>
-#include <iostream>
-#include "feed_parser.h"
 
-
-
-PriceLevel::PriceLevel(double p, int q) : price(p), quantity(q) {}
-
-
-
-void MarketSnapshot::update(const FeedEvent& event){
-    if (event.type == FeedType::EXECUTION || event.type == FeedType::UNKNOWN){ return; }
-
-    if (event.type == FeedType::BID){
-        this->bids[event.price] = std::make_unique<PriceLevel>(
-            event.price, event.quantity
-        );
-        return;
+BookEvent MarketSnapshot::update(const FeedEvent& ev) {
+    BookEvent out;
+    if (ev.type == FeedType::BID) {
+        if (ev.quantity == 0) {
+            bool was_best = !bids.empty() && bids.begin()->first == ev.price;
+            bids.erase(ev.price);
+            if (was_best) out.type = BookEventType::BestBidRemoved;
+        } else {
+            bids[ev.price] = std::make_unique<PriceLevel>(ev.price, ev.quantity);
+            if (bids.begin()->first == ev.price) {
+                out.type = BookEventType::NewBestBid;
+                out.price = ev.price;
+                out.quantity = ev.quantity;
+            }
+        }
+    } else if (ev.type == FeedType::ASK) {
+        if (ev.quantity == 0) {
+            bool was_best = !asks.empty() && asks.begin()->first == ev.price;
+            asks.erase(ev.price);
+            if (was_best) out.type = BookEventType::BestAskRemoved;
+        } else {
+            asks[ev.price] = std::make_unique<PriceLevel>(ev.price, ev.quantity);
+            if (asks.begin()->first == ev.price) {
+                out.type = BookEventType::NewBestAsk;
+                out.price = ev.price;
+                out.quantity = ev.quantity;
+            }
+        }
     }
-    if (event.type == FeedType::ASK){
-        this->asks[event.price] = std::make_unique<PriceLevel>(
-            event.price, event.quantity
-        );
-        return;
-    }
+    return out;
 }
+

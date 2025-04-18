@@ -12,3 +12,4 @@ target_include_directories(TradingSystem
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE
 )
+target_compile_features(TradingSystem PRIVATE cxx_std_17)
