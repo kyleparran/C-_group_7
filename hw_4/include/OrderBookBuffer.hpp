@@ -3,9 +3,7 @@
 #include <mutex>
 #include <cstddef>
 
-// ----------------- HeapAllocator -------------------
 struct HeapAllocator {
-    // Accept size_t but ignore it
     HeapAllocator(std::size_t = 0) { }
 
     template<typename U>
@@ -19,7 +17,6 @@ struct HeapAllocator {
     }
 };
 
-// ----------------- StackAllocator -------------------
 struct StackAllocator {
     char* buffer;
     std::size_t capacity;
@@ -48,11 +45,9 @@ struct StackAllocator {
 
     template<typename U>
     void deallocate(U*, std::size_t) {
-        // do nothing for stack-based
     }
 };
 
-// ----------------- NoLock & MutexLock ---------------
 struct NoLock {
     void lock() {}
     void unlock() {}
@@ -64,7 +59,6 @@ struct MutexLock {
     void unlock() { m.unlock(); }
 };
 
-// ----------- Policy-Based OrderBookBuffer -----------
 template<typename T, typename AllocatorPolicy, typename ThreadPolicy>
 class OrderBookBuffer : private AllocatorPolicy, private ThreadPolicy {
     T* data;
