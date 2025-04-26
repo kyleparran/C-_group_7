@@ -18,29 +18,19 @@ struct HeapAllocator {
 };
 
 struct StackAllocator {
-    char* buffer;
-    std::size_t capacity;
-    std::size_t offset;
+    static const std::size_t BUFFER_SIZE = 1024;
+    char buffer[BUFFER_SIZE];
 
-    StackAllocator(std::size_t cap)
-        : buffer(nullptr), capacity(cap), offset(0)
-    {
-        buffer = new char[cap];
-    }
-
-    ~StackAllocator() {
-        delete[] buffer;
-    }
+    StackAllocator(std::size_t = 0) { }
 
     template<typename U>
     U* allocate(std::size_t n) {
+        if(n * sizeof(U) > BUFFER_SIZE) 
+            throw std::runtime_error("Requested size exceeds buffer size.");
+
         std::size_t bytes = n * sizeof(U);
-        if(offset + bytes <= capacity) {
-            U* ptr = reinterpret_cast<U*>(buffer + offset);
-            offset += bytes;
-            return ptr;
-        }
-        return nullptr;
+        U* ptr = reinterpret_cast<U*>(buffer);
+        return ptr;
     }
 
     template<typename U>
