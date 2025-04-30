@@ -1,0 +1,15 @@
+logger:
+  name: "main"
+  level: "info"
+  pattern: "%v"
+  use_file: true
+  file_name: "output.log"
+  file_level: "info"
+  use_console: true
+  console_level: "info"
+
+orderbook:
+  allocator_type: "pool"  # pool, new
+  datastruct_type: "multimap"  # multimap, map, flat_array
+  price_type: "double" # double, float
+  OrderIdType: "int" # int
