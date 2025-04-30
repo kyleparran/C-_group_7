@@ -15,8 +15,6 @@
 #define orderDTypes PriceType_, OrderIdType_
 
 
-// todo: Logs arent outputting for anything but baseline
-
 void analyzeLatencies(const std::vector<long long>& latencies) {
     if (latencies.empty()) return;
 
@@ -91,54 +89,38 @@ void runRawPointers() {
 
 void runNewDelete() {
     std::vector<long long> latencies;
-    auto orderBook = std::make_shared<OrderBookFlat<PriceType_,OrderIdType_>>(TICK_COUNT);
-    MatchingEngine<orderDTypes> matchEngine(orderBook);
-    OrderManager<orderDTypes> orderManager(orderBook);
-
+    auto book = std::make_shared<OrderBookNewDelete<PriceType_,OrderIdType_>>(TICK_COUNT);
+    MatchingEngine<orderDTypes> engine(book);
+    OrderManager<orderDTypes> mgr(book);
     for (int i = 0; i < TICK_COUNT; ++i) {
-        Timer timer; timer.start();
-
-        // Simulate incoming tick data
-        MarketData tick = simMarketData();
-
-        // Create an order
+        Timer t; t.start();
+        auto tick = simMarketData();
         bool is_buy = (i % 2 == 0);
-        PriceType_ price = is_buy ? tick.bid_price : tick.ask_price;
-        auto order = orderManager.createOrder(i, tick.symbol, price, 100, is_buy);
-
-        // Match orders.
-        matchEngine.matchOrders(orderManager);
-
-        latencies.push_back(timer.stop());
+        auto price = is_buy ? tick.bid_price : tick.ask_price;
+        mgr.createOrder(i, tick.symbol, price, 100, is_buy);
+        engine.matchOrders(mgr);
+        latencies.push_back(t.stop());
     }
-    matchEngine.flushLogger();
+    engine.flushLogger();
     analyzeLatencies(latencies);
 }
 
 
 void runFlatArray() {
     std::vector<long long> latencies;
-    auto orderBook = std::make_shared<OrderBookNewDelete<PriceType_,OrderIdType_>>(TICK_COUNT);
-    MatchingEngine<orderDTypes> matchEngine(orderBook);
-    OrderManager<orderDTypes> orderManager(orderBook);
-
+    auto book = std::make_shared<OrderBookFlat<PriceType_,OrderIdType_>>(TICK_COUNT);
+    MatchingEngine<orderDTypes> engine(book);
+    OrderManager<orderDTypes> mgr(book);
     for (int i = 0; i < TICK_COUNT; ++i) {
-        Timer timer; timer.start();
-
-        // Simulate incoming tick data
-        MarketData tick = simMarketData();
-
-        // Create an order
+        Timer t; t.start();
+        auto tick = simMarketData();
         bool is_buy = (i % 2 == 0);
-        PriceType_ price = is_buy ? tick.bid_price : tick.ask_price;
-        auto order = orderManager.createOrder(i, tick.symbol, price, 100, is_buy);
-
-        // Match orders.
-        matchEngine.matchOrders(orderManager);
-
-        latencies.push_back(timer.stop());
+        auto price = is_buy ? tick.bid_price : tick.ask_price;
+        mgr.createOrder(i, tick.symbol, price, 100, is_buy);
+        engine.matchOrders(mgr);
+        latencies.push_back(t.stop());
     }
-    matchEngine.flushLogger();
+    engine.flushLogger();
     analyzeLatencies(latencies);
 }
 
@@ -150,17 +132,16 @@ int main() {
     runBaseline();
 
     // raw pointers instead of unique_ptrs
-    runRawPointers();
+    //runRawPointers();
 
     // Without memory aligment
-    // Probably best to just remove it manually from MarketData.hpp
 
     
     // raw new/delete instead of memory pool
-    runNewDelete();
+    //runNewDelete();
 
     // Flat array instead of multimap
-    runFlatArray();
+    //runFlatArray();
 
     return 0;
 }

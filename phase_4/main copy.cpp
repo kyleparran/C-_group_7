@@ -3,7 +3,6 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
-#include "Config.hpp"
 #include "TradeLogger.hpp"
 #include "OrderBook.hpp"
 #include "Timer.hpp"
