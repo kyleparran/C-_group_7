@@ -2,11 +2,6 @@
 Group 7
 Scott Turro Kyle Parran
 
-
-# High-Frequency Trading System in C++
-
-This repository contains a performance-optimized prototype for a high-frequency trading system. It focuses on modularity, memory efficiency, and latency benchmarking under different system configurations.
-
 ## Overview
 
 The HFT prototype includes the following modular components:
