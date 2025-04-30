@@ -62,7 +62,7 @@ void runBaseline() {
 void runRawPointers() {
     std::vector<long long> latencies;
     auto orderBook = std::make_shared<OrderBookNewPtrs<PriceType_,OrderIdType_>>(TICK_COUNT);
-    MatchingEngine<orderDTypes> matchEngine(orderBook);
+    MatchingEngineNewPtrs<orderDTypes> matchEngine(orderBook);
     OrderManager<orderDTypes> orderManager(orderBook);
 
     for (int i = 0; i < TICK_COUNT; ++i) {
@@ -109,7 +109,7 @@ void runNewDelete() {
 void runFlatArray() {
     std::vector<long long> latencies;
     auto book = std::make_shared<OrderBookFlat<PriceType_,OrderIdType_>>(TICK_COUNT);
-    MatchingEngine<orderDTypes> engine(book);
+    MatchingEngineFlat<orderDTypes> engine(book);
     OrderManager<orderDTypes> mgr(book);
     for (int i = 0; i < TICK_COUNT; ++i) {
         Timer t; t.start();
@@ -141,7 +141,7 @@ int main() {
     //runNewDelete();
 
     // Flat array instead of multimap
-    //runFlatArray();
+    // runFlatArray();
 
     return 0;
 }

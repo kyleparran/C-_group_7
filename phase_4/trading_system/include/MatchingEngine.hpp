@@ -35,9 +35,9 @@ public:
         auto bestSell = orderBook->getSellOrders().begin();
         auto endSell = orderBook->getSellOrders().end();
 
-        while(*bestBid >= *bestSell && 
-              *bestBid != *endBid &&
-              *bestSell != *endSell
+        while(*bestBid != *endBid &&
+              *bestSell != *endSell && 
+              *bestBid >= *bestSell
         ){ 
             int bidId = bestBid->second->id;
             int sellId = bestSell->second->id;
@@ -68,3 +68,115 @@ public:
         logger.flush();
     }
 };
+
+
+
+template<typename PriceType, typename OrderIdType>
+class MatchingEngineNewPtrs {
+    using OrderClassType = Order<PriceType, OrderIdType>;
+    using OrderBookClassType = std::shared_ptr<OrderBookNewPtrs<PriceType, OrderIdType>>;
+    using OrderPtr = std::shared_ptr<OrderClassType>;
+    
+    OrderBookClassType orderBook;
+    TradeLogger<OrderIdType> logger;
+public:
+    MatchingEngineNewPtrs(OrderBookClassType orderBookPtr) : orderBook(orderBookPtr) {}
+
+    std::vector<std::pair<OrderIdType, OrderIdType>> matchOrders(OrderManager<PriceType, OrderIdType>& orderMgr) {
+
+        std::vector<std::pair<OrderIdType, OrderIdType>> trades;
+        
+        auto bestBid = orderBook->getBuyOrders().begin();
+        auto endBid = orderBook->getBuyOrders().end();
+        auto bestSell = orderBook->getSellOrders().begin();
+        auto endSell = orderBook->getSellOrders().end();
+
+        while(*bestBid != *endBid &&
+              *bestSell != *endSell && 
+              *bestBid >= *bestSell
+        ){ 
+            int bidId = bestBid->second->id;
+            int sellId = bestSell->second->id;
+
+            if (bestBid->second->quantity > bestSell->second->quantity) {
+                ++bestSell;
+                orderMgr.fillOrder(sellId);
+                orderMgr.partialFillOrder(sellId, bestBid->second->quantity);
+            } else if (bestBid->second->quantity < bestSell->second->quantity) {
+                ++bestBid;
+                orderMgr.fillOrder(bidId);
+                orderMgr.partialFillOrder(bidId, bestSell->second->quantity);
+            } else {
+                ++bestSell; ++bestBid;
+                orderMgr.fillOrder(bidId);
+                orderMgr.fillOrder(sellId);
+            }
+            
+            // Push back trade
+            trades.emplace_back(bidId, sellId);
+            logger.logTrade(bidId, sellId);
+        }
+        
+        return trades;
+    }
+
+    void flushLogger() {
+        logger.flush();
+    }
+};
+
+
+template<typename PriceType, typename OrderIdType>
+class MatchingEngineFlat {
+    using OrderClassType = Order<PriceType, OrderIdType>;
+    using OrderBookClassType = std::shared_ptr<OrderBookFlat<PriceType, OrderIdType>>;
+    using OrderPtr = std::shared_ptr<OrderClassType>;
+    
+    OrderBookClassType orderBook;
+    TradeLogger<OrderIdType> logger;
+public:
+    MatchingEngineFlat(OrderBookClassType orderBookPtr) : orderBook(orderBookPtr) {}
+
+    std::vector<std::pair<OrderIdType, OrderIdType>> matchOrders(OrderManager<PriceType, OrderIdType>& orderMgr) {
+
+        std::vector<std::pair<OrderIdType, OrderIdType>> trades;
+        
+        auto bestBid = orderBook->getBuyOrders().begin();
+        auto endBid = orderBook->getBuyOrders().end();
+        auto bestSell = orderBook->getSellOrders().begin();
+        auto endSell = orderBook->getSellOrders().end();
+
+        while(*bestBid != *endBid &&
+              *bestSell != *endSell && 
+              *bestBid >= *bestSell
+        ){ 
+            int bidId = (*bestBid)->id;
+            int sellId = (*bestSell)->id;
+
+            if ((*bestBid)->quantity > (*bestSell)->quantity) {
+                ++bestSell;
+                orderMgr.fillOrder(sellId);
+                orderMgr.partialFillOrder(sellId, (*bestBid)->quantity);
+            } else if ((*bestBid)->quantity < (*bestSell)->quantity) {
+                ++bestBid;
+                orderMgr.fillOrder(bidId);
+                orderMgr.partialFillOrder(bidId, (*bestSell)->quantity);
+            } else {
+                ++bestSell; ++bestBid;
+                orderMgr.fillOrder(bidId);
+                orderMgr.fillOrder(sellId);
+            }
+            
+            // Push back trade
+            trades.emplace_back(bidId, sellId);
+            logger.logTrade(bidId, sellId);
+        }
+        
+        return trades;
+    }
+
+    void flushLogger() {
+        logger.flush();
+    }
+};
+
