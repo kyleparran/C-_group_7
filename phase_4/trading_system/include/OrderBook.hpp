@@ -127,6 +127,43 @@ public:
         else
             sell_orders.emplace(price, order);
     }
+
+    virtual void deleteOrder(OrderIdType id) {
+        auto it = std::find_if(buy_orders.begin(), buy_orders.end(), 
+            [id](const auto& order) { return order.second->id == id; });
+        
+        if (it != buy_orders.end()) {
+            buy_orders.erase(it);
+            return;
+        }
+        
+        it = std::find_if(sell_orders.begin(), sell_orders.end(), 
+            [id](const auto& order) { return order.second->id == id; });
+        
+        if (it != sell_orders.end()) {
+            sell_orders.erase(it);
+        }
+    }
+
+    virtual void partialFillOrder(OrderIdType id, int filledQty) {
+        auto it = std::find_if(buy_orders.begin(), buy_orders.end(), 
+            [id](const auto& order) { return order.second->id == id; });
+        
+        if (it != buy_orders.end()) {
+            it->second->quantity -= filledQty;
+            return;
+        }
+        
+        it = std::find_if(sell_orders.begin(), sell_orders.end(), 
+            [id](const auto& order) { return order.second->id == id; });
+        
+        if (it != sell_orders.end()) {
+            it->second->quantity -= filledQty;
+        }
+    }
+
+    auto& getBuyOrders() { return buy_orders; }
+    auto& getSellOrders() { return sell_orders; }
 };
 
 
@@ -156,8 +193,8 @@ class OrderBookFlat : public OrderBook<PriceType, OrderIdType> {
     using OrderClassPtr = std::unique_ptr<OrderClassType>;
     using OrderPair = std::pair<const PriceType, OrderClassPtr>;
 
-    std::vector<OrderClassType> buy_orders;
-    std::vector<OrderClassType> sell_orders;
+    std::vector<OrderClassPtr> buy_orders;
+    std::vector<OrderClassPtr> sell_orders;
     std::size_t buyIdx;
     std::size_t sellIdx;
 
@@ -170,50 +207,29 @@ public:
     }
 
     virtual void createAndAddOrder(OrderIdType id, const std::string &symbol,
-                                    PriceType price, int qty, bool is_buy) override
+                                PriceType price, int qty, bool is_buy) override
     {
-        OrderClassType newOrder(id, symbol, price, qty, is_buy);
-        
+        OrderClassType* order = PoolAllocator<OrderClassType>().allocate(1);
+        new (order) OrderClassType(id, symbol, price, qty, is_buy);
+        OrderClassPtr orderPtr(order);
+
         if (is_buy) {
-            buy_orders.push_back(newOrder);
+            auto it = std::lower_bound(buy_orders.begin(), buy_orders.end(), orderPtr,
+                                    [](const OrderClassPtr &a, const OrderClassPtr &b) {
+                                        return a->price > b->price;
+                                    });
+            buy_orders.insert(it, std::move(orderPtr));
             buyIdx = buy_orders.size();
         } else {
-            sell_orders.push_back(newOrder);
+            auto it = std::lower_bound(sell_orders.begin(), sell_orders.end(), orderPtr,
+                                    [](const OrderClassPtr &a, const OrderClassPtr &b) {
+                                        return a->price < b->price;
+                                    });
+            sell_orders.insert(it, std::move(orderPtr));
             sellIdx = sell_orders.size();
         }
     }
 
-    virtual void deleteOrder(OrderIdType id) override
-    {
-        auto it = std::find_if(buy_orders.begin(), buy_orders.end(),
-            [id](const OrderClassType &order) { return order.id == id; });
-        if (it != buy_orders.end()) {
-            buy_orders.erase(it);
-            buyIdx = buy_orders.size();
-            return;
-        }
-        
-        it = std::find_if(sell_orders.begin(), sell_orders.end(),
-            [id](const OrderClassType &order) { return order.id == id; });
-        if (it != sell_orders.end()) {
-            sell_orders.erase(it);
-            sellIdx = sell_orders.size();
-        }
-    }
-
-    virtual void partialFillOrder(OrderIdType id, int filledQty) override
-    {
-        auto it = std::find_if(buy_orders.begin(), buy_orders.end(),
-            [id](const OrderClassType &order) { return order.id == id; });
-        if (it != buy_orders.end()) {
-            it->quantity -= filledQty;
-            return;
-        }
-        
-        it = std::find_if(sell_orders.begin(), sell_orders.end(),
-            [id](const OrderClassType &order) { return order.id == id; });
-        if (it != sell_orders.end()) {
-            it->quantity -= filledQty;
-        }
-    }
+    auto& getBuyOrders() { return buy_orders; }
+    auto& getSellOrders() { return sell_orders; }
 };
