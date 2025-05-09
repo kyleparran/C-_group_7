@@ -1,64 +1,35 @@
-# Optimized Hash Table 
-```
-Benchmarkings with 10000 operations, and 10000 max Cap
-operation,HashTable,unordered_map,diff
-insertion,0.0458019,0.00165698,0.0441449
-lookup,0.0174311,0.00104496,0.0163862
-removal,0.0421454,0.00145619,0.0406892
 
-Benchmarkings with 10000 operations, and 100000 max Cap
-operation,HashTable,unordered_map,diff
-insertion,0.0010947,0.00158596,-0.000491263
-lookup,0.000775681,0.000659507,0.000116174
-removal,0.00152661,0.00103846,0.000488153
+# Homework 6
+### Group 7: Kyle Parran & Scott Turro
 
-Benchmarkings with 10000 operations, and 1000000 max Cap
-operation,HashTable,unordered_map,diff
-insertion,0.00153694,0.00211853,-0.000581586
-lookup,0.00122495,0.00112214,0.000102814
-removal,0.00223299,0.00156434,0.000668648
-```
+## Benchmark and Complexity Report
 
-Overall the two have comparable performance. The custom implementation has much poorer results which using a small max capacity. Insertion seems to be much better for the custom Robin Hood hashing-based hash table.
+We built and tested four data structures: a Robin Hood Hash table, a binary heap priority queue, SIMD-based moving averages, and a hybrid order book. We compared our implementations against standard C++ library structures to see exactly how much improvement we achieved.
+
+## Robin Hood Hash Table
+Our hash table used Robin Hood hashing, which helps handle collisions efficiently. It provided constant-time (O(1)) operations on average, but in the worst case, the complexity depended on table capacity (O(C)). For example, inserting 10,000 items into a fully occupied 10,000-slot table took 17.56 ms, slower than the standard unordered map (2.06 ms). This overhead came from Robin Hood hashing's strategy of managing collisions by swapping items. Lookup performance was relatively slow (80.5 µs vs. 2.2 µs for the standard) when compared to the unordered_map. With larger table sizes (like 1,000,000 slots), our insertions improved significantly to just 0.78 ms, beating the standard map’s 2.85 ms, showing the benefit of lower load factors. Memory use remained predictable and proportional to the capacity.
+
+When picking how a hash table handles collisions, you're balancing three things:
+
+* **Simplicity:** Some methods, like chaining (storing collisions in a list), are straightforward but use more memory.
+* **Speed:** Others, like linear probing (checking the next open slot), are fast until the table fills up, then slow down dramatically.
+* **Consistency:** Robin Hood hashing tries to keep performance steady by evenly spreading out collisions, but it does extra work swapping items, making insertions a bit slower.
+
+Basically, you’re deciding between keeping things simple, maximizing speed, or ensuring stable, predictable performance. Robin Hood hashing sits in the middle, aiming for fairness but with a bit more complexity.
 
 
-# Priority Queue
-Benchmarked with 10000 operations
-```
-Benchmarking HeapPriorityQueue with 10000 operations
-operation,HeapPriorityQueue,priority_queue,diff
-insertion,0.000682318,0.00100326,-0.000320938
-extraction,0.0029394,0.0030976,-0.000158204
+## Binary Heap Priority Queue
+We implemented a binary max-heap priority queue, which has a complexity of O(log n) for both insertion and extraction operations. When inserting 10,000 items, our implementation took 0.62 ms, slower than the standard priority queue’s 0.29 ms. For extraction at the same scale, our heap again performed slower, taking 0.87 ms compared to the standard's quicker 0.61 ms. With a larger dataset of 100,000 items, our insertion was slower as well, taking 3.34 ms compared to the standard's 2.60 ms. Similarly, extraction performance at this size was noticeably slower for our heap (12.15 ms) compared to the standard implementation (8.42 ms). The additional overhead in our custom implementation likely stems from less optimized internal heap management compared to the highly tuned standard priority queue. These results show our custom binary heap didn't outperform the standard implementation in raw speed, but it did maintain consistent logarithmic performance and predictable memory usage. In practical terms, the standard library's priority queue currently remains a better choice for speed-critical tasks unless further optimizations are made to our implementation.
 
-Benchmarking HeapPriorityQueue with 100000 operations
-operation,HeapPriorityQueue,priority_queue,diff
-insertion,0.0059996,0.00969049,-0.0036909
-extraction,0.0386225,0.0402981,-0.00167562
-```
+## SIMD Moving Average
 
-Overall the custom implementation is faster than the STL implementation for both insertion and extraction. 
+Our SIMD approach to calculating moving averages showed clear real-world benefits. Although both SIMD and the scalar versions shared linear complexity (O(T)), the SIMD was slower in our runs, the extra setup cost outweighed its vector boost at these problem sizes. For example, calculating a moving average over 100,000 price points with a window of 1,000 took 1.11 ms with SIMD, compared to 0.76 ms for the scalar version. This might seem counterintuitive at first, but after researching online a little bit,  the overhead of SIMD can sometimes make it slower on smaller windows. However, when we used a smaller window of 100 points, SIMD took 0.68 ms, closer in performance to the scalar’s 0.57 ms. The advantage grows as computations become memory-bound, highlighting SIMD’s value for large-scale computations.
+
+## Hybrid Order Book
+
+Our hybrid order book combined a hash table for quick ID-based order lookup with an ordered map for efficient price-level queries. This resulted in constant-time (O(1)) modifications and deletions, an improvement over the standard tree-based approach, which is typically slower due to linear scans. For instance, modifying 100,000 orders took only 1.09 ms for our hybrid structure, significantly faster than 6.68 ms for the standard map implementation. Similarly, deleting 100,000 orders was slower at 24.49 ms versus 10.84 ms for the plain map. Insertion speed was also slower because maintaining two structures simultaneously added overhead. This trade-off still makes sense in high-frequency trading, where modifying and removing orders quickly probably matters more than slightly slower insertions. The memory usage increased marginally, but stayed predictable and manageable.
 
 
-# Moving Average
-Benchmarked with 10000 operations
-```
-Benchmarking with 10000 data points and window size 100
-operation,SIMD,Normal,diff
-movingAverage,0.000113373,0.000117543,-4.17e-06
-
-Benchmarking with 10000 data points and window size 1000
-operation,SIMD,Normal,diff
-movingAverage,9.7572e-05,0.000111463,-1.3891e-05
-
-Benchmarking with 100000 data points and window size 100
-operation,SIMD,Normal,diff
-movingAverage,0.0011658,0.0013564,-0.000190594
-
-Benchmarking with 100000 data points and window size 1000
-operation,SIMD,Normal,diff
-movingAverage,0.0011924,0.00125218,-5.9782e-05
-```
-
-Overall the SIMD implementation is just slightly faster than the normal implementation. The difference is more notizable when we have a small window size and a large number of data points. 
+In short, targeted optimizations in these data structures provided meaningful and practical speed-ups for critical trading operations, balancing performance gains against modest complexity and memory trade-offs.
 
 

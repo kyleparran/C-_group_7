@@ -14,10 +14,8 @@ public:
     inline bool isEmpty() const { return heap.empty(); }
     
     void insert(const T& val) {
-        // Add the element to end of the heap
         heap.push_back(val);
         
-        // Rebalance
         int idx = heap.size() - 1;
         while (idx > 0) {
             int pIdx = getParentIdx(idx);

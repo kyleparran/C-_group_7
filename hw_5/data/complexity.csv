@@ -1,0 +1,21 @@
+Structure,Operation,AverageTime,WorstTime,Space,Notes
+RobinHoodHashTable,Insert,O(1),O(C),O(C),"C = table capacity"
+RobinHoodHashTable,Lookup,O(1),O(C),O(C),
+RobinHoodHashTable,Delete,O(1),O(C),O(C),
+
+BinaryMaxHeapQueue,Insert,O(log n),O(log n),O(n),"n = items in heap"
+BinaryMaxHeapQueue,ExtractMax,O(log n),O(log n),O(n),
+
+MovingAverageSIMD,Compute,O(T),O(T),O(T),"T = price points"
+MovingAverageScalar,Compute,O(T),O(T),O(T),
+
+HybridOrderBook,Add,O(1),O(log L),O(N+L),"L = price levels, N = orders"
+HybridOrderBook,Modify,O(1),O(1),O(N+L),
+HybridOrderBook,Delete,O(1),O(log L),O(N+L),
+HybridOrderBook,BestBidAsk,O(1),O(1),O(N+L),
+HybridOrderBook,OrdersAtPrice,O(k),O(k),O(N+L),"k = orders at that price level"
+
+PlainTreeOrderBook,Add,O(log L),O(log L),O(N+L),
+PlainTreeOrderBook,Modify,O(log L + k),O(log L + k),O(N+L),
+PlainTreeOrderBook,Delete,O(log L + k),O(log L + k),O(N+L),
+PlainTreeOrderBook,BestBidAsk,O(1),O(1),O(N+L),

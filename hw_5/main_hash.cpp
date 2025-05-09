@@ -1,130 +1,76 @@
-#include <iostream>
-#include <functional>
-#include <unordered_map>
+#include <fstream>
+#include <vector>
 #include <chrono>
+#include <unordered_map>
+#include <filesystem>
+#include <string>
+#include <iostream>
 #include "hash_table.hpp"
 
-#define MAX_CAPACITY 30
-
-struct Order {
-    int id;
-    double price;
-    int qty;
-
-    bool operator==(const Order& other) const {
-        return id == other.id && price == other.price && qty == other.qty;
-    }
+struct Ord {
+    int    id = 0;
+    double p  = 0.0;
+    int    q  = 0;
+    bool operator==(const Ord& o) const { return id == o.id; }
 };
 
-size_t hashFunction(std::string key) {
-    return std::hash<std::string>{}(key);
-}
-
-void testHashTable() {
-    HashTable<std::string, Order> custContainer(MAX_CAPACITY, hashFunction);
-
-    // Insert
-    custContainer.insert("order1", Order{1, 100.0, 2});
-    custContainer.insert("order2", Order{2, 200.0, 3});
-    custContainer.insert("order3", Order{3, 300.0, 4});
-
-    // Lookup
-    Order* order1 = custContainer.lookup("order1");
-    if (order1) std::cout << "Found order1: " << order1->id << std::endl;
-    else std::cout << "Order1 not found" << std::endl;
-
-    // Remove
-    custContainer.remove("order1");
-    order1 = custContainer.lookup("order1");
-    if (!order1) std::cout << "Order1 successfully removed" << std::endl;
-
-    std::cout <<"\n";
-}
-
-void benchmark(int numOperations, int maxCapacity) {
-    std::cout << "Benchmarkings with " << numOperations << " operations, and " << maxCapacity << " max Cap\n";
-
-    // Create containers
-    HashTable<std::string, Order> custContainer(maxCapacity, hashFunction);
-    std::unordered_map<std::string, Order> stdContainer;
-    stdContainer.reserve(maxCapacity);
-    
-    // Create keys
-    std::vector<std::string> keys(numOperations);
-    for (int i = 0; i < numOperations; ++i) {
-        keys[i] = "order" + std::to_string(i);
-    }
-    
-    // Print headers
-    std::cout << "operation,HashTable,unordered_map,diff\n";
-
-    // Benchmark insertion
-    auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < numOperations; ++i) {
-        custContainer.insert(keys[i], Order{i, 100.0, 2});
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed1 = end - start;
-    // Compare to unordered_map
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < numOperations; ++i) {
-        stdContainer[keys[i]] = Order{i, 100.0, 2};
-    }
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed2 = end - start;
-    // Print results
-    std::cout << "insertion," <<
-                 elapsed1.count() << "," <<
-                 elapsed2.count() << "," << 
-                 elapsed1.count() - elapsed2.count() << "\n";    
-
-    // Benchmark lookup
-    start = std::chrono::high_resolution_clock::now();
-    for (const auto& key : keys) {
-        custContainer.lookup(key);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    elapsed1 = end - start;
-    // Compare to unordered_map
-    start = std::chrono::high_resolution_clock::now();
-    for (const auto& key : keys) {
-        stdContainer.find(key);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    elapsed2 = end - start;
-    // Print results
-    std::cout << "lookup," << 
-                 elapsed1.count() << "," <<
-                 elapsed2.count() << "," << 
-                 elapsed1.count() - elapsed2.count() << "\n";
-
-    // Benchmark removal
-    start = std::chrono::high_resolution_clock::now();
-    for (const auto& key : keys) {
-        custContainer.remove(key);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    elapsed1 = end - start;
-    // Compare to unordered_map
-    start = std::chrono::high_resolution_clock::now();
-    for (const auto& key : keys) {
-        stdContainer.erase(key);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    elapsed2 = end - start;
-    // Print results
-    std::cout << "removal," << 
-                 elapsed1.count() << "," <<
-                 elapsed2.count() << "," << 
-                 elapsed1.count() - elapsed2.count() << "\n";
-    
-    std::cout <<"\n";
+size_t symHash(const std::string& s) {
+    uint32_t h = 2166136261u;
+    for (char c : s) { h ^= (c & 0x1F); h *= 16777619u; }
+    return h;
 }
 
 int main() {
-    testHashTable();
-    benchmark(10000, 10000);
-    benchmark(10000, 100000);
-    benchmark(10000, 1000000);
-    return 0;
+    try {
+        auto dataDir = std::filesystem::current_path() / "data";
+        std::filesystem::create_directories(dataDir);
+        std::ofstream out(dataDir / "hash_bench.csv");
+        out << "ops,cap,op,my,std,diff\n";
+
+        auto run = [&](int ops, int cap) {
+            HashTable<std::string, Ord> my(cap, symHash);
+            std::unordered_map<std::string, Ord> st; st.reserve(cap);
+
+            std::vector<std::string> k(ops);
+            for (int i = 0; i < ops; ++i) k[i] = "S" + std::to_string(i);
+
+            auto t = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < ops; ++i) my.insert(k[i], {i, 99.0, 1});
+            auto t1 = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < ops; ++i) st[k[i]] = {i, 99.0, 1};
+            auto t2 = std::chrono::high_resolution_clock::now();
+            out << ops << ',' << cap << ",insert,"
+                << (t1 - t).count() << ','
+                << (t2 - t1).count() << ','
+                << (t1 - t2).count() << '\n';
+
+            t = std::chrono::high_resolution_clock::now();
+            for (auto& x : k) my.lookup(x);
+            t1 = std::chrono::high_resolution_clock::now();
+            for (auto& x : k) st.find(x);
+            t2 = std::chrono::high_resolution_clock::now();
+            out << ops << ',' << cap << ",lookup,"
+                << (t1 - t).count() << ','
+                << (t2 - t1).count() << ','
+                << (t1 - t2).count() << '\n';
+
+            t = std::chrono::high_resolution_clock::now();
+            for (auto& x : k) my.remove(x);
+            t1 = std::chrono::high_resolution_clock::now();
+            for (auto& x : k) st.erase(x);
+            t2 = std::chrono::high_resolution_clock::now();
+            out << ops << ',' << cap << ",erase,"
+                << (t1 - t).count() << ','
+                << (t2 - t1).count() << ','
+                << (t1 - t2).count() << '\n';
+        };
+
+        run(10000, 10000);
+        run(10000, 100000);
+        run(10000, 1000000);
+        std::cout << "Done main_hash\n";
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+    }
 }
+
