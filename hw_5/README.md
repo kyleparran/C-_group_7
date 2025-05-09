@@ -1,5 +1,5 @@
 
-# Homework 6
+# Homework 5
 ### Group 7: Kyle Parran & Scott Turro
 
 ## Benchmark and Complexity Report
