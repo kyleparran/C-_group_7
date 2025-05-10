@@ -10,7 +10,7 @@ Our optimized order gave much better results. By pre-reserving memory and loop u
 ## Latency Results
 ![analysis/per_order_latency.png](analysis/per_order_latency.png)
 
-The latency in the plain and pooled version increases with the number of orders. Our optimized version has a much lower latency. At first the latency gets smaller with the number of orders, but then it increases again. This reflects the amount of overhead which does not scale with the number of orders.
+The latency in the plain and pooled version increases with the number of orders. Our optimized version has a much lower latency. It's latency actually gets better as number of orders increase. This reflects the amount of overhead which does not scale with the number of orders.
 
 ## Unit Test Results
 ```

@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <random>
+#include <optional>
 #include <cassert>
 #include "OrderBook.h"
 #include "OptimizedOrderBook.h"
@@ -158,7 +159,7 @@ std::pair<double, double> multi_time_pool(int numOrders, int numRuns, std::optio
 
 int main(int argc, char **argv)
 {
-    std::vector<int> vols{1000, 5000, 10000, 50000, 100000};
+    std::vector<int> vols{1000, 5000, 10000, 50000, 100000, 1000000};
 
     // Run unit tests
     if (argc > 1 && std::string(argv[1]) == "--unit")
@@ -181,7 +182,7 @@ int main(int argc, char **argv)
     // Run all implementations
     auto csv = fmt::output_file("../data/performance_results.csv");
     csv.print("orders,plain,optimized,pool\n");
-    int numRuns = 30;
+    int numRuns = 10;
     int seed = 50;
     for (int n : vols)
     {
