@@ -13,9 +13,21 @@ set(SRC_FILES
     src/benchmark.cpp
 )
 
+# Add fmt library for printing
+include(FetchContent)
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG        11.2.0
+)
+FetchContent_MakeAvailable(fmt)
+
+
+
 add_executable(benchmark ${SRC_FILES})
 
 target_include_directories(benchmark PRIVATE src)
+target_link_libraries(benchmark PRIVATE fmt::fmt)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -flto")
 
