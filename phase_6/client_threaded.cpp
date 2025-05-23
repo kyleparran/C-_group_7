@@ -5,163 +5,55 @@
 #include <sys/socket.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
+#include <iostream>
 #include <unistd.h>
 #include <atomic>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
 #include <cerrno>
-#include <iostream>
-#include <thread>
+#include <unordered_map>
 
-// UDP/TCP constants
 #define MULTICAST_IP "239.255.0.1"
 #define SERVER_IP "192.168.50.188"
 #define SERVER_PORT 4000
 #define CLIENT_PORT 3001
-// #define RING_BUFFER_SIZE 65536
-#define RING_BUFFER_SIZE 200
-#define MAX_LINE_LENGTH 256
-#define UTP_CHUNK_SIZE 256
+#define CLIENT_NAME "Scott-Kyle"
+#define BUFFER_SIZE 2048
+#define MAX_CHALLENGE_ID_DIGITS 5
 
+/* 
+this assumes sec prices always come before targetId and challenge id
 
-/*
-work in progress
+ */
 
+inline void parseAndSend(const char* secPtr, const int tcpSocket, const char* targetSec, const char* challengeId, const int challengeIdLen) {
+    // parse bid
+    const char* bidStart = secPtr + 17;
+    const char* bidEnd = strchr(bidStart, '|');
+    int bidLength = bidEnd - bidStart;
+    // parse ask
+    const char* askStart = bidEnd + 5;
+    const char* askEnd = strchr(askStart, '\n');
+    int askLength = askEnd - askStart;
 
-# Components
-Buffer writer
-- only job is to feed UTP data into circular ring buffer
+    // Prepare the send buffer
+    char sendBuffer[128] __attribute__((aligned(64)));
+    int bytesToSend = snprintf(
+        sendBuffer,
+        sizeof(sendBuffer),
+        "CHALLENGE_RESPONSE %.*s SEC%.*s %.*s %.*s %s\n",
+        challengeIdLen, challengeId,
+        4, targetSec,
+        bidLength, bidStart,
+        askLength, askStart,
+        CLIENT_NAME
+    );
 
-Target finder
-- Finds the target ticker string
-- Ideally is really close to to target finder.
-- Searches backwards
-- Responsible for updating ticker finders when a challenge has been solved
-
-Ticker finder
-- finds the tickers
-- if found then send and update other ticker finders
-- one going forward
-- one going backward
-*/
-
-
-
-// Each entry is cache-line aligned to reduce false sharing.
-// struct alignas(64) MessageRecord {
-//     char data[MAX_LINE_LENGTH];
-//     size_t length;
-// };
-// MessageRecord ringBuffer[RING_BUFFER_SIZE];
-
-
-// Each entry is cache-line aligned 
-alignas(64) std::atomic<char> ringBuffer[RING_BUFFER_SIZE];
-std::atomic<size_t> writeIndex(0);
-
-void pinThread(const int core) {
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(core, &cpuset);
-    if (sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) != 0) {
-        perror("sched_setaffinity");
-    }
+    send(tcpSocket, sendBuffer, bytesToSend, MSG_NOSIGNAL);
+    // std ::cout << "Sent: " << sendBuffer << "\n";
 }
 
-// UDP receiver thread:
-void writerProcess() {
-    pinThread(1);
-
-    // Create and configure the UDP socket.
-    int udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udpSocket < 0) {
-        perror("socket");
-        exit(EXIT_FAILURE);
-    }
-    int enableFlag = 1;
-    if (setsockopt(udpSocket, SOL_SOCKET, SO_REUSEADDR, &enableFlag, sizeof(enableFlag)) != 0) {
-        perror("setsockopt SO_REUSEADDR");
-    }
-    
-    sockaddr_in udpAddr{};
-    udpAddr.sin_family = AF_INET;
-    udpAddr.sin_port = htons(CLIENT_PORT);
-    udpAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(udpSocket, (sockaddr*)&udpAddr, sizeof(udpAddr)) < 0) {
-        perror("bind");
-        exit(EXIT_FAILURE);
-    }
-    
-    // Join multicast group.
-    ip_mreq multicastRequest{};
-    multicastRequest.imr_multiaddr.s_addr = inet_addr(MULTICAST_IP);
-    multicastRequest.imr_interface.s_addr = htonl(INADDR_ANY);
-    if (setsockopt(udpSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicastRequest, sizeof(multicastRequest)) < 0) {
-        perror("setsockopt IP_ADD_MEMBERSHIP");
-    }
-    
-    // Increase the UDP receive buffer size.
-    int receiveBufferSize = 1 << 20;
-    if (setsockopt(udpSocket, SOL_SOCKET, SO_RCVBUF, &receiveBufferSize, sizeof(receiveBufferSize)) != 0) {
-        perror("setsockopt SO_RCVBUF");
-    }
-    
-    while (true) {
-        size_t numToEnd = RING_BUFFER_SIZE - writeIndex.load(std::memory_order_relaxed);
-        ssize_t receivedBytes = recv(udpSocket, ringBuffer, numToEnd, 0);
-        if (receivedBytes <= 0) continue;
-        if (receivedBytes == numToEnd) {
-            writeIndex.store(0, std::memory_order_relaxed);
-        }
-        else {
-            writeIndex.store(writeIndex + receivedBytes, std::memory_order_relaxed);
-        }
-    }
-}
-
-
-/*
-// Consumer thread for Security processing.
-// It scans new messages directly out of the ring buffer checking for lines starting with "SEC|".
-void tickerFinderThread() {
-    pinThread(2);
-    size_t localReadIndex = 0;
-    
-    while (running.load(std::memory_order_relaxed)) {
-        // While there are new messages in the ring.
-        while (localReadIndex < writeIndex.load(std::memory_order_relaxed)) {
-            size_t slot = localReadIndex % RING_BUFFER_SIZE;
-            MessageRecord &msg = ringBuffer[slot];
-            // Check if the message starts with "SEC|".
-            if (std::strncmp(msg.data, "SEC|", 4) == 0) {
-                // Process security line. For example, print it.
-                std::cout << "[SECURITY] " << msg.data << std::endl;
-            }
-            ++localReadIndex;
-        }
-        // Busy-wait with a very short delay.
-        usleep(50);
-    }
-}
-*/
-
-// thread for finding Challenge/Target
-void targetFinderThread() {
-    pinThread(3);
-    size_t localIndex = 0;
-
-    while (localReadIndex < writeIndex.load(std::memory_order_relaxed)) {
-        size_t slot = localReadIndex % RING_BUFFER_SIZE;
-        MessageRecord &msg = ringBuffer[slot];
-        if (std::strncmp(msg.data, "CHALLENGE_ID:", 13) == 0 || 
-            std::strncmp(msg.data, "TARGET:", 7) == 0) {
-            // Process challenge/target lines. For example, print it.
-            std::cout << "[CHALLENGE/TARGET] " << msg.data << std::endl;
-        }
-        ++localReadIndex;
-    }
-}
 int main() {
     // Set maximum real-time priority
     struct sched_param schedulingParameters;
@@ -171,18 +63,88 @@ int main() {
     mlockall(MCL_CURRENT | MCL_FUTURE);
     // Set highest process priority
     setpriority(PRIO_PROCESS, 0, -20);
-    
-    // Optionally pin the main thread to CPU core 0.
-    pinThread(0);
-    
-    // Threads.
-    std::thread writer(writerProcess);
-    // std::thread tickerFinder(tickerFinderThread);
-    // std::thread targetFinder(targetFinderThread);
-    
-    writer.join();
-    // tickerFinder.join();
-    // targetFinder.join();
-    
-    return 0;
+    // Pin this process to CPU 0 to reduce scheduling jitter
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+    CPU_SET(0, &cpuSet);
+    sched_setaffinity(0, sizeof(cpuSet), &cpuSet);
+
+    // Create a UDP socket for receiving data
+    int udpSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    int enableFlag = 1;  // Allow reuse of local addresses
+    setsockopt(udpSocket, SOL_SOCKET, SO_REUSEADDR, &enableFlag, sizeof(enableFlag));
+    // Bind UDP socket to client port
+    sockaddr_in udpSockaddrIn{};
+    udpSockaddrIn.sin_family = AF_INET;
+    udpSockaddrIn.sin_port = htons(CLIENT_PORT);
+    udpSockaddrIn.sin_addr.s_addr = htonl(INADDR_ANY);
+    bind(udpSocket, (sockaddr *)&udpSockaddrIn, sizeof(udpSockaddrIn));
+    // Join multicast group
+    ip_mreq multicastRequest{};
+    multicastRequest.imr_multiaddr.s_addr = inet_addr(MULTICAST_IP);
+    multicastRequest.imr_interface.s_addr = htonl(INADDR_ANY);
+    setsockopt(udpSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicastRequest, sizeof(multicastRequest));
+    // Increase receive buffer to handle high throughput
+    int receiveBufferSize = 1 << 20;
+    setsockopt(udpSocket, SOL_SOCKET, SO_RCVBUF, &receiveBufferSize, sizeof(receiveBufferSize));
+    // Create a TCP socket for sending challenge responses
+    int tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(tcpSocket, IPPROTO_TCP, TCP_NODELAY, &enableFlag, sizeof(enableFlag));
+    // Setup sockaddr for connecting to TCP server
+    sockaddr_in tcpSockaddrIn{};
+    tcpSockaddrIn.sin_family = AF_INET;
+    tcpSockaddrIn.sin_port = htons(SERVER_PORT);
+    inet_pton(AF_INET, SERVER_IP, &tcpSockaddrIn.sin_addr);
+    // Try connecting up to 10 times with short delay in between
+    int attempt = 0;
+    for (; attempt < 10 && connect(tcpSocket, (sockaddr *)&tcpSockaddrIn, sizeof(tcpSockaddrIn)) < 0; attempt++) {
+        std::cout << "Failed to connect to TCP server. Attempt " << attempt + 1 << "/10\n";
+        usleep(100000);
+    }
+    if (attempt == 10) {
+        std::cerr << "Failed to connect to TCP server after 10 attempts.\n";
+        return -1;
+    }
+    std::cout << "CONNECTED!\n"; 
+
+    char receiveBuffer[BUFFER_SIZE] __attribute__((aligned(64)));
+    const char* targetSec = nullptr;
+    const char* challengeId = nullptr;
+    int challengeIdLen = -1;
+    while (true) {
+        // Receive data from UDP
+        ssize_t receivedBytes = recv(udpSocket, receiveBuffer, sizeof(receiveBuffer) - 1, 0);
+        if (receivedBytes <= 0) continue;
+
+        const char *currPosition = receiveBuffer + receivedBytes;
+        const char *startPosition = receiveBuffer;
+        while (currPosition >= startPosition) {
+            if (*currPosition != '\n'){
+                --currPosition;
+                continue;
+            }
+ 
+            if (!memcmp(currPosition, "\nS", 2)) {
+                const char* sec = currPosition + 8;
+                if (!memcmp(sec, targetSec, 4))
+                    parseAndSend(currPosition, tcpSocket, targetSec, challengeId, challengeIdLen);
+                currPosition -= 30;
+            }
+            else if(!memcmp(currPosition, "\nT", 2)) {
+                // Get Target
+                targetSec = currPosition + 11;
+
+                // Get Challenge ID
+                const char* idStart = currPosition - MAX_CHALLENGE_ID_DIGITS;
+                idStart = strchr(idStart, ':') + 1;
+                challengeId = idStart;
+                challengeIdLen = currPosition - idStart;
+
+                currPosition -= 45;
+            }
+            else {
+                --currPosition;
+            }
+        }
+    }
 }

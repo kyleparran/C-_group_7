@@ -52,8 +52,8 @@ inline void parseAndSend(const char* secPtr, const int tcpSocket, const char* ta
         CLIENT_NAME
     );
 
-    std ::cout << "Sending: " << sendBuffer << std::endl;
     send(tcpSocket, sendBuffer, bytesToSend, MSG_NOSIGNAL);
+    // std ::cout << "Sent: " << sendBuffer << "\n";
 }
 
 int main() {
@@ -126,21 +126,26 @@ int main() {
                 continue;
             }
  
-            if (!memcmp(currPosition, "\nSEC|", 5)) {
+            if (!memcmp(currPosition, "\nS", 2)) {
                 const char* sec = currPosition + 8;
                 if (!memcmp(sec, targetSec, 4))
                     parseAndSend(currPosition, tcpSocket, targetSec, challengeId, challengeIdLen);
+                currPosition -= 30;
             }
-            else if (!memcmp(currPosition, "\nCHALLENGE_ID:", 14)) {  // todo handle case where challenge id not found yet
+            else if (!memcmp(currPosition, "\nC", 2)) {
                 const char* idStart = currPosition + 14;
                 const char* idEnd = strchr(idStart, '\n');
                 challengeId = idStart;
                 challengeIdLen = idEnd - idStart;
+                currPosition -= 30;
             }
-            else if(!memcmp(currPosition, "\nTARGET:", 8)) {
+            else if(!memcmp(currPosition, "\nT", 2)) {
                 targetSec = currPosition + 11;
+                currPosition -= 15;
             }
-            --currPosition;
+            else {
+                --currPosition;
+            }
         }
     }
 }
