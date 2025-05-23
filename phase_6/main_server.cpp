@@ -21,6 +21,7 @@ struct Challenge {
     bool winner_declared;
     std::string winner_name;
     std::chrono::steady_clock::time_point first_response_time;
+    std::chrono::steady_clock::time_point sent_time;
 };
 
 std::mutex challenge_mutex;
@@ -52,6 +53,8 @@ Challenge generate_challenge(std::mt19937& gen, std::uniform_real_distribution<>
     std::uniform_int_distribution<> ticker_index_dist(0, available_tickers.size() - 1);
     newChallenge.target_ticker = available_tickers[ticker_index_dist(gen)];
 
+    // Set the sent time to now
+    newChallenge.sent_time = std::chrono::steady_clock::now();
     return newChallenge;
 }
 
@@ -147,12 +150,13 @@ private:
         int challenge_id;
         double submitted_bid, submitted_ask;
         iss >> header >> challenge_id >> ticker >> submitted_bid >> submitted_ask >> client_name;
-        // std::cout << "header: " << header << std::endl;
-        // std::cout << "Challenge ID: " << challenge_id << std::endl;
-        // std::cout << "Ticker: " << ticker << std::endl;
-        // std::cout << "Submitted Bid: " << submitted_bid << std::endl;
-        // std::cout << "Submitted Ask: " << submitted_ask << std::endl;
-        // std::cout << "Client Name: " << client_name << std::endl;
+        
+        std::cout << "header: " << header << std::endl;
+        std::cout << "Challenge ID: " << challenge_id << std::endl;
+        std::cout << "Ticker: " << ticker << std::endl;
+        std::cout << "Submitted Bid: " << submitted_bid << std::endl;
+        std::cout << "Submitted Ask: " << submitted_ask << std::endl;
+        std::cout << "Client Name: " << client_name << std::endl;
 
         if (header != "CHALLENGE_RESPONSE") return;
 
@@ -175,8 +179,15 @@ private:
                                 current_challenge.winner_declared = true;
                                 current_challenge.winner_name = client_name;
                                 current_challenge.first_response_time = std::chrono::steady_clock::now();
+                                
 
-                                std::cout << "🏆 Challenge " << challenge_id << " won by " << client_name << "!\n";
+                                // calc latency
+                                auto latency = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    current_challenge.first_response_time - current_challenge.sent_time
+                                ).count();
+
+                                std::cout << "🏆 Challenge " << challenge_id << " won by " << client_name << "!"
+                                          << " LATENCY: " << latency << " ms\n";
                             }
                             }
 
